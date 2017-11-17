@@ -133,7 +133,7 @@ services:
       neutron-plugin: Calico
       neutron-security-groups: true
       worker-multiplier: 0.25
-      prefer-ipv6: true
+      prefer-ipv6: false
     annotations:
       "gui-x": "500"
       "gui-y": "500"
