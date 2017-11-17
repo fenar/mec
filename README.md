@@ -1,2 +1,0 @@
-# mec
-Mobile Edge Computing
