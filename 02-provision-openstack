@@ -41,6 +41,23 @@ openstack flavor create m1.xlarge --id auto --ram 16384 --disk 40 --vcpus 4
 openstack quota  set --ram 204800 --cores 200 --instances 100 admin
 neutron quota-update --security-group 100 --security-group-rule 500 
 
+nova aggregate-create lxd-aggregate lxd-zone
+nova aggregate-set-metadata 1 lxd=true
+nova aggregate-create kvm-aggregate kvm-zone
+
+#for lxdnodes in ${LXD_HOST[@]}
+#do
+#    nova aggregate-add-host lxd-aggregate ${lxdnodes:0:11}
+#done
+
+#for kvmnodes in ${KVM_HOST[@]}
+#do
+#    nova aggregate-add-host kvm-aggregate ${kvmnodes:0:11}
+#done
+
+nova flavor-create --is-public true m2.small 5369 4096 10 2
+nova flavor-key 5369 set aggregate_instance_extra_specs:lxd=true
+
 #Upload vnf images to glance
 glance image-create --name=cirros_0.3.5 --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/cirros-0.3.5-x86_64-disk.img
 glance image-create --name=ubuntu_16.04_Qcow2 --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/xenial-server-cloudimg-amd64-disk1.img
