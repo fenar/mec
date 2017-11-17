@@ -1,0 +1,48 @@
+#!/bin/bash
+
+set -ex
+
+echo "This command is run to configure an Orange-Box Openstack deployment"
+
+obnum=`hostname | cut -c 10- -`
+
+PKGS=" python-keystone python-neutronclient python-novaclient python-glanceclient python-openstackclient"
+dpkg -l $PKGS > /dev/null || sudo apt-get install -y $PKGS
+
+keystone=$(juju status keystone | grep keystone/0 | awk '{print $5}' )
+
+echo "#!/bin/bash
+export OS_USERNAME=admin
+export OS_PASSWORD=admin
+export OS_TENANT_NAME=admin
+export OS_REGION_NAME=RegionOne
+export OS_AUTH_URL=${OS_AUTH_PROTOCOL:-http}://`juju run --unit keystone/0 'unit-get private-address'`:5000/v2.0
+" > nova.rc
+
+source nova.rc
+
+#Configure the default security group to allow ICMP and SSH
+openstack security group rule create --proto icmp default
+openstack security group rule create --proto tcp --dst-port 22 default
+openstack security group rule create --proto tcp --dst-port 80 default
+openstack security group rule create --proto tcp --dst-port 443 default
+openstack security group rule create --proto tcp --dst-port 3389 default
+
+#Upload a default SSH key
+openstack keypair create  --public-key ~/.ssh/id_rsa.pub default
+
+#Remove the m1.tiny as it is too small for Ubuntu.
+openstack flavor create m1.small --id auto --ram 2048 --disk 25 --vcpus 2
+openstack flavor create m1.medium --id auto --ram 4096 --disk 30 --vcpus 2
+openstack flavor create m1.large --id auto --ram 8192 --disk 35 --vcpus 4
+openstack flavor create m1.xlarge --id auto --ram 16384 --disk 40 --vcpus 4
+
+#Modify quotas for the tenant to allow large deployments
+openstack quota  set --ram 204800 --cores 200 --instances 100 admin
+neutron quota-update --security-group 100 --security-group-rule 500 
+
+#Upload vnf images to glance
+glance image-create --name=cirros_0.3.5 --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/cirros-0.3.5-x86_64-disk.img
+glance image-create --name=ubuntu_16.04_Qcow2 --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/xenial-server-cloudimg-amd64-disk1.img
+glance image-create --name=ubuntu_16.04_Raw --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/xenial-server-cloudimg-amd64-root.tar.xz
+exit

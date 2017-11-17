@@ -17,7 +17,7 @@ services:
     bindings:
       cloud-compute: management
       amqp: management
-      internal: management
+      internal: private
       image-service: management
       neutron-plugin: management
     to:
@@ -36,7 +36,7 @@ services:
     bindings:
       cloud-compute: management
       amqp: management
-      internal: management
+      internal: private
       lxd: management 
       image-service: management
       neutron-plugin: management
@@ -96,7 +96,7 @@ services:
     bindings:
       public: management
       admin: management
-      internal: management
+      internal: private
     to:
       - lxd:2
   keystone:
@@ -112,7 +112,7 @@ services:
     bindings:
       public: management
       admin: management
-      internal: management
+      internal: private
     to:
       - lxd:3
   mysql:
@@ -133,13 +133,14 @@ services:
       neutron-plugin: Calico
       neutron-security-groups: true
       worker-multiplier: 0.25
+      prefer-ipv6: true
     annotations:
       "gui-x": "500"
       "gui-y": "500"
     bindings:
       public: management
       admin: management
-      internal: management
+      internal: private
     to:
       - lxd:5
   neutron-calico:
@@ -164,7 +165,7 @@ services:
     bindings:
       public: management
       admin: management
-      internal: management
+      internal: private
     to:
       - lxd:6
   openstack-dashboard:
@@ -210,7 +211,7 @@ services:
       gui-x: "84"
       gui-y: "720"
     bindings:
-      bgp-route-reflector: private
+      bgp-route-reflector: management
     options:
       enable-ipv6: true
     to:
@@ -223,6 +224,11 @@ services:
     annotations:
       "gui-x": "0"
       "gui-y": "0"
+    bindings:
+      internal: private
+      website: management
+      vnfm: management
+      identity-credentials: management
     to:
       - lxd:3
 
