@@ -13,11 +13,11 @@ fi
 
 if [[ ${model:0:9} == "openstack" ]]; then
 	juju switch openstack
-     	juju deploy openstack-klxd-calico-newton.yaml
+     	juju deploy mec-openstack-openbaton.yaml
 else
 	juju add-model openstack
 	juju switch openstack
-     	juju deploy openstack-klxd-calico-newton.yaml
+     	juju deploy mec-openstack-openbaton.yaml
 fi
 
 echo "Login to the juju-gui to see status or use juju status"

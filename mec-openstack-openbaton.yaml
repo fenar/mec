@@ -217,7 +217,7 @@ services:
       - "6"
   openbaton:
     charm: "./openbaton-charm"
-    series: trusty
+    series: xenial
     num_units: 1
     exposed: true
     annotations:
