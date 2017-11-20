@@ -17,7 +17,7 @@ services:
     bindings:
       cloud-compute: management
       amqp: management
-      internal: private
+      internal: management
       image-service: management
       neutron-plugin: management
     to:
@@ -36,7 +36,7 @@ services:
     bindings:
       cloud-compute: management
       amqp: management
-      internal: private
+      internal: management
       lxd: management 
       image-service: management
       neutron-plugin: management
@@ -61,7 +61,7 @@ services:
     num_units: 1
     options:
       openstack-origin: cloud:xenial-newton
-      block-device: None
+      block-device: sdb
       glance-api-version: 2
       worker-multiplier: 0.25
     annotations:
@@ -96,7 +96,7 @@ services:
     bindings:
       public: management
       admin: management
-      internal: private
+      internal: management
     to:
       - lxd:2
   keystone:
@@ -112,7 +112,7 @@ services:
     bindings:
       public: management
       admin: management
-      internal: private
+      internal: management
     to:
       - lxd:3
   mysql:
@@ -140,7 +140,7 @@ services:
     bindings:
       public: management
       admin: management
-      internal: private
+      internal: management
     to:
       - lxd:5
   neutron-calico:
@@ -165,7 +165,7 @@ services:
     bindings:
       public: management
       admin: management
-      internal: private
+      internal: management
     to:
       - lxd:6
   openstack-dashboard:
@@ -225,7 +225,7 @@ services:
       "gui-x": "0"
       "gui-y": "0"
     bindings:
-      internal: private
+      internal: management
       website: management
       vnfm: management
       identity-credentials: management
