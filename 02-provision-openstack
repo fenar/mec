@@ -50,8 +50,8 @@ LXD_HOST=`grep lxd hypervisor-hosts  | cut -d "," -f 1 `
 KVM_HOST=`grep QEMU hypervisor-hosts  | cut -d "," -f 1 `
 rm -rf hypervisor-hosts
 
-openstack aggregate create az-kvm
-openstack aggregate create az-lxd
+openstack aggregate create az-kvm --zone az-kvm
+openstack aggregate create az-lxd --zone az-lxd
 openstack aggregate set az-lxd --property exclusive=true
 for lxdnodes in ${LXD_HOST[@]} ; do openstack aggregate add host az-lxd ${lxdnodes:0:12} ; done
 for kvmnodes in ${KVM_HOST[@]} ; do openstack aggregate add host az-kvm ${kvmnodes:0:12} ; done
