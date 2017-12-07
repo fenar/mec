@@ -19,9 +19,8 @@ services:
     num_units: 1
     options:
       admin-password: admin
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:xenial-ocata
       worker-multiplier: 0.25
-#     preferred-api-version: 3
     annotations:
       gui-x: "500"
       gui-y: "0"
@@ -49,7 +48,7 @@ services:
       enable-resize: true
       migration-auth-type: ssh
       virt-type: kvm
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:xenial-ocata
     annotations:
       gui-x: "1042"
       gui-y: "1254.5"
@@ -67,7 +66,7 @@ services:
     charm: "cs:nova-compute"
     num_units: 3
     options:
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:xenial-ocata
       enable-live-migration: true
       enable-resize: true
       migration-auth-type: ssh
@@ -92,7 +91,6 @@ services:
       block-devices: /dev/sdb
       overwrite: true
       storage-type: zfs
-#      source: ppa:ubuntu-lxc/lxd-stable
     annotations:
       gui-x: "750"
       gui-y: "250"
@@ -100,7 +98,7 @@ services:
     charm: "cs:xenial/cinder"
     num_units: 6
     options:
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:xenial-ocata
       block-device: sdc
       overwrite: "true"
       enabled-services: all
@@ -134,7 +132,7 @@ services:
     charm: "cs:xenial/glance"
     num_units: 1
     options:
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:xenial-ocata
       worker-multiplier: 0.25
     annotations:
       gui-x: "2099"
@@ -146,10 +144,10 @@ services:
     to:
       - lxd:1
   neutron-api:
-    charm: "cs:~project-calico/neutron-api"
+    charm: "./charm-neutron-api"
     num_units: 1
     options:
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:xenial-ocata
       neutron-plugin: Calico
       neutron-security-groups: true
       worker-multiplier: 0.25
@@ -166,7 +164,7 @@ services:
   neutron-calico:
     charm: "cs:~project-calico/neutron-calico"
     options:
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:xenial-ocata
       enable-ipv6: true
     annotations:
       gui-x: "560"
@@ -175,7 +173,7 @@ services:
     charm: "cs:xenial/nova-cloud-controller"
     num_units: 1
     options:
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:xenial-ocata
       network-manager: Neutron
       console-access-protocol: novnc
       worker-multiplier: 0.25
@@ -192,7 +190,7 @@ services:
     charm: "cs:xenial/openstack-dashboard"
     num_units: 1
     options:
-      openstack-origin: cloud:xenial-newton
+      openstack-origin: cloud:xenial-ocata
       webroot: "/"
       ubuntu-theme: "no"
     annotations:
