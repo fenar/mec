@@ -33,10 +33,10 @@ openstack security group rule create --proto tcp --dst-port 3389 default
 openstack keypair create  --public-key ~/.ssh/id_rsa.pub default
 
 #Remove the m1.tiny as it is too small for Ubuntu.
-#openstack flavor create m1.small --id auto --ram 4096 --disk 20 --vcpus 2
-#openstack flavor create m1.medium --id auto --ram 8192 --disk 30 --vcpus 4
-#openstack flavor create m1.large --id auto --ram 16384 --disk 40 --vcpus 8
-#openstack flavor create m1.xlarge --id auto --ram 32768 --disk 50 --vcpus 16
+openstack flavor create m1.small --id auto --ram 4096 --disk 20 --vcpus 2
+openstack flavor create m1.medium --id auto --ram 8192 --disk 30 --vcpus 4
+openstack flavor create m1.large --id auto --ram 16384 --disk 40 --vcpus 8
+openstack flavor create m1.xlarge --id auto --ram 32768 --disk 50 --vcpus 16
 
 #Modify quotas for the tenant to allow large deployments
 openstack quota  set --ram 204800 --cores 200 --instances 100 admin
@@ -45,10 +45,9 @@ neutron quota-update --security-group 100 --security-group-rule 500
 glance image-create --name=cirros_0.3.5 --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/cirros-0.3.5-x86_64-disk.img
 glance image-create --name=ubuntu_16.04_kvm --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/xenial-server-cloudimg-amd64-disk1.img
 glance image-create --name=ubuntu_16.04_lxc --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/xenial-server-cloudimg-amd64-root.tar.xz
-glance image-create --name=oai-lxc-image-vzw --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/openai-20171205-3.tar.gz
-glance image-create --name=oai-lxc-image --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/openai-20171205-2.tar.gz
-glance image-create --name oai-kvm-image-vzw --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/OpenAirInterfaceEPC.qcow2
-glance image-create --name oai-kvm-image --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/OpenAirInterfaceEPC-theirs.qcow2
+glance image-create --name=oai-lxc-image --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/openai-20171213.tar.gz
+glance image-create --name oai-kvm-image --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/OpenAirInterfaceEPC-20171213.qcow2
+glance image-create --name openims --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/openims.img
 
 for i in ` openstack hypervisor list -f value  -c "Hypervisor Hostname"` ; do echo -n $i, ; openstack hypervisor show $i -c hypervisor_type -f value ; done > hypervisor-hosts
 LXD_HOST=`grep lxd hypervisor-hosts  | cut -d "," -f 1 `
