@@ -3,7 +3,7 @@ Mobile Edge Computing (MEC) POD IaaS Build-Up <br>
 <br>-----<br>
 # MAAS & JUJU SETUP
 ```sh
-ubuntu@OrangeBox140:~/.local/share/juju$ cat clouds.yaml <br>
+ubuntu@OrangeBox140:~/.local/share/juju$ cat clouds.yaml
 clouds:
   v4n140-maas:
     type: maas
