@@ -1,6 +1,32 @@
 # MEC SWITCH FABRIC
 Mobile Edge Computing (MEC) POD IaaS Build-Up <br>
 
+<br>
+# MAAS & JUJU SETUP
+ubuntu@OrangeBox140:~/.local/share/juju$ cat clouds.yaml 
+```sh
+clouds:
+  v4n140-maas:
+    type: maas
+    auth-types: [oauth1]
+    endpoint: http://172.27.140.1/MAAS/
+ubuntu@OrangeBox140:~/.local/share/juju$ cat credentials.yaml 
+credentials:
+  v4n140-maas:
+    maas:
+      auth-type: oauth1
+      maas-oauth: Wx6xE9que2UFq8xxRj:VC6CzEuzrjdj68xRQM:Rqt8kdAz2hr48WDyfNuU8UL584L6vXD4
+ubuntu@OrangeBox140:~/.local/share/juju$ cat accounts.yaml 
+controllers:
+  maas-v4n140-controller:
+    user: admin
+    password: 8df9ceaae168a15c00265e9d4b9803c8
+    last-known-access: superuser
+ubuntu@OrangeBox140:~/.local/share/juju$ 
+```
+<br>
+
+
 Deploying Ubuntu Openstack with KVM and Nova-LXD Hypervisors, together with Calico Network Fabric and OpenBaton as Service Orchestrator.
 
 <br>-----<br>
