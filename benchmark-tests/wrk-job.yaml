@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wrk-manual
+  namespace: default
+  labels:
+    app: cache-bench-caching-benchmark-wrk
+    chart: caching-benchmark-0.1.0
+    release: cache-bench
+    heritage: Tiller
+spec:
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        app: cache-bench-caching-benchmark-wrk
+        release: cache-bench
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: wrk
+        image: williamyeh/wrk
+        # command: [ "/usr/local/bin/wrk" ]
+        args: [ "-c", "10", "--latency",  "--timeout", "2s", "-d", "10s", "-t", "5", "http://cache-bench-caching-benchmark-nginx" ]
+        resources:
+          limits:
+            cpu: 16000m
+            memory: 16384Mi
+          requests:
+            cpu: 1000m
+            memory: 2048Mi
+

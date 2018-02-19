@@ -1,0 +1,24 @@
+###
+#
+# Serving Container (nginx)
+#
+###
+wrk: 
+  replicaCount: 1
+  image: williamyeh/wrk
+  resources: 
+    requests:
+      cpu: 100m
+      memory: 1024Mi
+    limits:
+      cpu: 1000m
+      memory: 4096Mi
+  nodeSelector:
+    kubernetes.io/hostname: kontron-node09
+  timeout: 2s
+  concurrency: 1000
+  duration: 5s
+  threads: 5
+  # pick nginx or varnish
+  target: nginx
+  file: 4194304b
