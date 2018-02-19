@@ -1,6 +1,10 @@
 # MEC SWITCH FABRIC
 Mobile Edge Computing (MEC) POD IaaS Build-Up <br>
 <br>-----<br>
+ This project aims to deploy: <br> 
+(1) Small Scale Openstack with Calico L3 Network Fabric <br>
+(2) Small Scale Kubernetes with available GPU installed nodes <br>
+<br><br>
 # MAAS & JUJU SETUP
 ```sh
 ubuntu@OrangeBox140:~/.local/share/juju$ cat clouds.yaml
