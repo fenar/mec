@@ -1,0 +1,614 @@
+    1  sudo chown ubuntu:ubuntu -R /srv
+    2  cd /srv
+    3  ll
+    4  ifconfig -a
+    5  sudo nano /etc/network/interfaces
+    6  ifconfig -a
+    7  ping google.com
+    8  sudo apt-get install git
+    9  ll
+   10  sudo apt-get update
+   11  git clone https://github.com/fenar/v4n-config.git
+   12  ll
+   13  cd v4n-config/
+   14  ll
+   15  sudo ./00-network.sh 
+   16  E: Problem executing scripts APT::Update::Post-Invoke-Success 'if /usr/bin/test -w /var/cache/app-info -a -e /usr/bin/appstreamcli; then appstreamcli refresh > /dev/null; fi'
+   17  sudo apt-get remove appstreamcli
+   18  sudo apt-get install appstreamcli
+   19  cd /etc/apt
+   20  ll
+   21  cdf apt.conf.d/
+   22  ll
+   23  cd apt.conf.d/
+   24  ll
+   25  sudo reboot now
+   26  sudo apt-get update
+   27  sudo reboot now
+   28  ifconfig -a
+   29  ping 8.8.8.8
+   30  ping google.com
+   31  sudo apt-get update
+   32  This worked for me (From here, https://forum.siduction.org/index.php?topic=6174.0):
+   33  sudo apt-get purge libappstream3
+   34  sudo aptget update
+   35  sudo apt-get update
+   36  sudo apt-get upgrade
+   37  sudo reboot now
+   38  gksudo gedit /etc/default/apport
+   39  sudo nano /etc/default/apport
+   40  sudo service apport restart
+   41  exit
+   42  sudo apt-get update
+   43  sudo apt install --reinstall libappstream3
+   44  sudo apt-get update
+   45  sudo apt-get upgrade
+   46  sudo chown ubuntu
+   47  sudo chown ubuntu:ubuntu -R /srv
+   48  cd /srv
+   49  ll
+   50  cd v4n-config/
+   51  ll
+   52  sudo ./00-network.sh 
+   53  ifconfig -a
+   54  sudo nano /etc/network/interfaces
+   55  netstat -arn
+   56  ping 8.8.8.8
+   57  sudo ./00-network.sh 
+   58  ll
+   59  sudo ./01-packages.sh 
+   60  cd /srv
+   61  ll
+   62  cd v4n-config/
+   63  ll
+   64  sudo ./02-apache_setup.sh 
+   65  sudo ./03-maas_setup_environment.sh 
+   66  ll
+   67  cd /home/ubuntu/
+   68  ll
+   69  cd .ssh
+   70  ll
+   71  powd
+   72  pwd
+   73  ll
+   74  ssh-keygen -t rsa
+   75  cd .ssh
+   76  ll
+   77  cat id_rsa.pub 
+   78  docker ps -a
+   79  ifconfig -a
+   80  sudo nano /etc/network/interfaces
+   81  sudo ip link set virbr0
+   82  sudo  brctl delbr virbr0
+   83  sudo ip link set virbr0 down
+   84  sudo  brctl delbr virbr0
+   85  ifconfig -a
+   86  sudo  brctl delbr virbr0-nic
+   87  sudo ip link set virbr0-nic down
+   88  sudo  brctl delbr virbr0-nic
+   89  sudo ifconfig virbr0-nic destroy
+   90  sudo ifconfig virbr0-nic down
+   91  ifconfig -a
+   92  sudo service network restart
+   93  sudo reboot now
+   94  ifconfig -a
+   95  cd /etc/network
+   96  ll
+   97  cd interfaces.d/
+   98  ll
+   99  cd c..
+  100  sudo nano interfaces
+  101  ll
+  102  cd .
+  103  cd ..
+  104  sudo nano interfaces
+  105  sudo docker ps -a
+  106  docker 
+  107  cd /srv
+  108  cd ob
+  109  ll
+  110  cd v4n-config/
+  111  ll
+  112  sudo ./04-add_virtual_nodes.sh 
+  113  ping 8.8.8.8
+  114  ping google.com
+  115  sudo shutdown now
+  116  cd /srv
+  117  ll
+  118  cd v4n-config/
+  119  ll
+  120  sudo ./05-add_physical_nodes.sh 
+  121  exit
+  122  firefox
+  123  exit
+  124  cd /srv
+  125  ll
+  126  mkdir 2ndMECHackathon
+  127  ll
+  128  juju version
+  129  cd /home/ubuntu
+  130  ll
+  131  pwd
+  132  cd .local
+  133  ll
+  134  cd share
+  135  ll
+  136  cd juju
+  137  ll
+  138  nano clouds.yaml
+  139  nano credentials.yaml
+  140  juju version
+  141  sudo add-apt-repository ppa:juju/stable
+  142  sudo apt-get update
+  143  juju versi
+  144  sudo apt-get upgrade
+  145  juju version
+  146  cd /srv
+  147  ll
+  148  sudo rm -r v4n-config/
+  149  ll
+  150  git clone https://github.com/fenar/openstack-lxd.git
+  151  ll
+  152  cd openstack-lxd/
+  153  ll
+  154  sudo nano 00-juju-controller-bootstrap.sh 
+  155  ./00-juju-controller-bootstrap.sh 
+  156  cd /home
+  157  cd .lo
+  158  cd ubuntu/
+  159  cd .local/
+  160  ll
+  161  cd share/
+  162  ll
+  163  cd juju
+  164  ll
+  165  nano clouds.yaml 
+  166  nano credentials.yaml 
+  167  cd /srv
+  168  cd openstack-lxd/
+  169  ./00-juju-controller-bootstrap.sh 
+  170  cd ..
+  171  mkdir K8s
+  172  cd K8s/
+  173  nano k8s.yaml
+  174  vu k8s.yaml 
+  175  vi k8s.yaml 
+  176  juju add-model k8s
+  177  ll
+  178  juju deploy k8s.yaml
+  179  watch -c juju status --color
+  180  mkdir -p ~/.kube
+  181  ll
+  182  juju scp kubernetes-master/0:config ~/.kube/config
+  183  snap install kubectl --classic
+  184  sudo snap install kubectl --classic
+  185  kubectl cluster-info
+  186  juju config kubernetes-master enable-dashboard-addons=true
+  187  kubectl proxy
+  188  watch -c juju status --color
+  189  cat ~/.kube/config
+  190  watch -c juju status --color
+  191  virt-manager -c qemu+ssh://ubuntu@172.27.160.111/system
+  192  ssh ubuntu@172.27.160.11
+  193  ssh ubuntu@172.27.160.111
+  194  exit
+  195  virt-manager -c qemu+ssh://ubuntu@172.27.160.111/system
+  196  sudo virt-manager -c qemu+ssh://ubuntu@172.27.160.111/system
+  197  sudo apt-get install ssh-askpass-gnome ssh-askpass
+  198  sudo virt-manager -c qemu+ssh://ubuntu@172.27.160.111/system
+  199  juju gui --show-credentials --no-browser
+  200  cd /srv
+  201  ll
+  202  cd 2ndMECHackathon/
+  203  ll
+  204  cd ..
+  205  cd openstack-lxd/
+  206  ll
+  207  cp 00-juju-controller-bootstrap.sh /srv/K8s/
+  208  cp 09-destroy-juju-controller.sh /srv/K8s/
+  209  cd ..
+  210  cd K8s/
+  211  ll
+  212  ssh DellR63001ob160.maas
+  213  watch -c juju status --color
+  214  kubectl proxy
+  215  virsh list
+  216  virsh list --all
+  217  cd /srv
+  218  ll
+  219  cd K8s
+  220  ll
+  221  juju list-models
+  222  ll
+  223  juju destroy-model k8s
+  224  ll
+  225  ./09-destroy-juju-controller.sh 
+  226  sudo shutdown now
+  227  dmesq
+  228  clear
+  229  dmesg | grep tty
+  230  minicom -s
+  231  sudo apt-get install minicom
+  232  minicom -s
+  233  sudo minicom -s
+  234  minicom
+  235  sudo minicom
+  236  sudo minicom ttyUSB0
+  237  lsusb
+  238  sudo minicom -s ttyUSB0
+  239  sudo minicom
+  240  ls
+  241  ls -la /srv/2ndMECHackathon/
+  242  exit
+  243  firefox &
+  244  exit
+  245  cd /srv/K8s/
+  246  nano k8s-minimal.yaml 
+  247  juju status
+  248  juju models
+  249  juju destroy-model default
+  250  juju add-model kontron
+  251  nano k8s-minimal.yaml 
+  252  cd ../2ndMECHackathon/
+  253  ls
+  254  for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "sudo nvidia-smi"; done
+  255  s
+  256  ls
+  257  kubectl create -f nvidia-smi.yaml 
+  258  juju scp kubernetes-master/0:config ~/.kube/config
+  259  kubectl get pods --all-namespaces
+  260  for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "ls"; done
+  261  for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "tar xfz cars_brad.tgz"; done
+  262  for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "ls"; done
+  263  for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "rm cars_brad.tgz"; done
+  264  for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "sudo mv cars_brad /openalpr-data"; done
+  265  for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "sudo chmod -R a+r /openalpr-data"; done
+  266  for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "docker pull samnco/pts:7.4.0-cuda"; done
+  267  for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "docker pull samnco/openalpr:latest-3.3.1-16.04-cuda-2"; done
+  268  for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "docker pull samnco/openalpr:latest-3.3.1-16.04-nocuda"; done
+  269  history
+  270  history | tee day1/history.txt
+shell 2
+    1  sudo chown ubuntu:ubuntu -R /srv
+    2  cd /srv
+    3  ll
+    4  ifconfig -a
+    5  sudo nano /etc/network/interfaces
+    6  ifconfig -a
+    7  ping google.com
+    8  sudo apt-get install git
+    9  ll
+   10  sudo apt-get update
+   11  git clone https://github.com/fenar/v4n-config.git
+   12  ll
+   13  cd v4n-config/
+   14  ll
+   15  sudo ./00-network.sh 
+   16  E: Problem executing scripts APT::Update::Post-Invoke-Success 'if /usr/bin/test -w /var/cache/app-info -a -e /usr/bin/appstreamcli; then appstreamcli refresh > /dev/null; fi'
+   17  sudo apt-get remove appstreamcli
+   18  sudo apt-get install appstreamcli
+   19  cd /etc/apt
+   20  ll
+   21  cdf apt.conf.d/
+   22  ll
+   23  cd apt.conf.d/
+   24  ll
+   25  sudo reboot now
+   26  sudo apt-get update
+   27  sudo reboot now
+   28  ifconfig -a
+   29  ping 8.8.8.8
+   30  ping google.com
+   31  sudo apt-get update
+   32  This worked for me (From here, https://forum.siduction.org/index.php?topic=6174.0):
+   33  sudo apt-get purge libappstream3
+   34  sudo aptget update
+   35  sudo apt-get update
+   36  sudo apt-get upgrade
+   37  sudo reboot now
+   38  gksudo gedit /etc/default/apport
+   39  sudo nano /etc/default/apport
+   40  sudo service apport restart
+   41  exit
+   42  sudo apt-get update
+   43  sudo apt install --reinstall libappstream3
+   44  sudo apt-get update
+   45  sudo apt-get upgrade
+   46  sudo chown ubuntu
+   47  sudo chown ubuntu:ubuntu -R /srv
+   48  cd /srv
+   49  ll
+   50  cd v4n-config/
+   51  ll
+   52  sudo ./00-network.sh 
+   53  ifconfig -a
+   54  sudo nano /etc/network/interfaces
+   55  netstat -arn
+   56  ping 8.8.8.8
+   57  sudo ./00-network.sh 
+   58  ll
+   59  sudo ./01-packages.sh 
+   60  cd /srv
+   61  ll
+   62  cd v4n-config/
+   63  ll
+   64  sudo ./02-apache_setup.sh 
+   65  sudo ./03-maas_setup_environment.sh 
+   66  ll
+   67  cd /home/ubuntu/
+   68  ll
+   69  cd .ssh
+   70  ll
+   71  powd
+   72  pwd
+   73  ll
+   74  ssh-keygen -t rsa
+   75  cd .ssh
+   76  ll
+   77  cat id_rsa.pub 
+   78  docker ps -a
+   79  ifconfig -a
+   80  sudo nano /etc/network/interfaces
+   81  sudo ip link set virbr0
+   82  sudo  brctl delbr virbr0
+   83  sudo ip link set virbr0 down
+   84  sudo  brctl delbr virbr0
+   85  ifconfig -a
+   86  sudo  brctl delbr virbr0-nic
+   87  sudo ip link set virbr0-nic down
+   88  sudo  brctl delbr virbr0-nic
+   89  sudo ifconfig virbr0-nic destroy
+   90  sudo ifconfig virbr0-nic down
+   91  ifconfig -a
+   92  sudo service network restart
+   93  sudo reboot now
+   94  ifconfig -a
+   95  cd /etc/network
+   96  ll
+   97  cd interfaces.d/
+   98  ll
+   99  cd c..
+  100  sudo nano interfaces
+  101  ll
+  102  cd .
+  103  cd ..
+  104  sudo nano interfaces
+  105  sudo docker ps -a
+  106  docker 
+  107  cd /srv
+  108  cd ob
+  109  ll
+  110  cd v4n-config/
+  111  ll
+  112  sudo ./04-add_virtual_nodes.sh 
+  113  ping 8.8.8.8
+  114  ping google.com
+  115  sudo shutdown now
+  116  cd /srv
+  117  ll
+  118  cd v4n-config/
+  119  ll
+  120  sudo ./05-add_physical_nodes.sh 
+  121  exit
+  122  firefox
+  123  exit
+  124  cd /srv
+  125  ll
+  126  mkdir 2ndMECHackathon
+  127  ll
+  128  juju version
+  129  cd /home/ubuntu
+  130  ll
+  131  pwd
+  132  cd .local
+  133  ll
+  134  cd share
+  135  ll
+  136  cd juju
+  137  ll
+  138  nano clouds.yaml
+  139  nano credentials.yaml
+  140  juju version
+  141  sudo add-apt-repository ppa:juju/stable
+  142  sudo apt-get update
+  143  juju versi
+  144  sudo apt-get upgrade
+  145  juju version
+  146  cd /srv
+  147  ll
+  148  sudo rm -r v4n-config/
+  149  ll
+  150  git clone https://github.com/fenar/openstack-lxd.git
+  151  ll
+  152  cd openstack-lxd/
+  153  ll
+  154  sudo nano 00-juju-controller-bootstrap.sh 
+  155  ./00-juju-controller-bootstrap.sh 
+  156  cd /home
+  157  cd .lo
+  158  cd ubuntu/
+  159  cd .local/
+  160  ll
+  161  cd share/
+  162  ll
+  163  cd juju
+  164  ll
+  165  nano clouds.yaml 
+  166  nano credentials.yaml 
+  167  cd /srv
+  168  cd openstack-lxd/
+  169  ./00-juju-controller-bootstrap.sh 
+  170  cd ..
+  171  mkdir K8s
+  172  cd K8s/
+  173  nano k8s.yaml
+  174  vu k8s.yaml 
+  175  vi k8s.yaml 
+  176  juju add-model k8s
+  177  ll
+  178  juju deploy k8s.yaml
+  179  watch -c juju status --color
+  180  mkdir -p ~/.kube
+  181  ll
+  182  juju scp kubernetes-master/0:config ~/.kube/config
+  183  snap install kubectl --classic
+  184  sudo snap install kubectl --classic
+  185  kubectl cluster-info
+  186  juju config kubernetes-master enable-dashboard-addons=true
+  187  kubectl proxy
+  188  watch -c juju status --color
+  189  cat ~/.kube/config
+  190  watch -c juju status --color
+  191  virt-manager -c qemu+ssh://ubuntu@172.27.160.111/system
+  192  ssh ubuntu@172.27.160.11
+  193  ssh ubuntu@172.27.160.111
+  194  exit
+  195  virt-manager -c qemu+ssh://ubuntu@172.27.160.111/system
+  196  sudo virt-manager -c qemu+ssh://ubuntu@172.27.160.111/system
+  197  sudo apt-get install ssh-askpass-gnome ssh-askpass
+  198  sudo virt-manager -c qemu+ssh://ubuntu@172.27.160.111/system
+  199  juju gui --show-credentials --no-browser
+  200  cd /srv
+  201  ll
+  202  cd 2ndMECHackathon/
+  203  ll
+  204  cd ..
+  205  cd openstack-lxd/
+  206  ll
+  207  cp 00-juju-controller-bootstrap.sh /srv/K8s/
+  208  cp 09-destroy-juju-controller.sh /srv/K8s/
+  209  cd ..
+  210  cd K8s/
+  211  ll
+  212  ssh DellR63001ob160.maas
+  213  watch -c juju status --color
+  214  kubectl proxy
+  215  virsh list
+  216  virsh list --all
+  217  cd /srv
+  218  ll
+  219  cd K8s
+  220  ll
+  221  juju list-models
+  222  ll
+  223  juju destroy-model k8s
+  224  ll
+  225  ./09-destroy-juju-controller.sh 
+  226  sudo shutdown now
+  227  dmesq
+  228  clear
+  229  dmesg | grep tty
+  230  minicom -s
+  231  sudo apt-get install minicom
+  232  minicom -s
+  233  sudo minicom -s
+  234  minicom
+  235  sudo minicom
+  236  sudo minicom ttyUSB0
+  237  lsusb
+  238  sudo minicom -s ttyUSB0
+  239  sudo minicom
+  240  ls
+  241  ls -la /srv/2ndMECHackathon/
+  242  exit
+  243  firefox &
+  244  juju status
+  245  juju run --application kubernetes-worker "hostname" 
+  246  cd /srv/2ndMECHackathon/
+  247  ls
+  248  cd charts/
+  249  ls
+  250  cd ..
+  251  git clone https://github.com/madeden/charts madcharts
+  252  git clone https://github.com/madeden/docker-images ./madimages
+  253  cd madcharts/
+  254  cd ..
+  255  nano ../K8s/k8s.yaml 
+  256  juju status
+  257  juju run --all hostname
+  258  nano ../K8s/k8s.yaml 
+  259  cd ../K8s/
+  260  juju deploy k8s.yaml
+  261  nano k8s.yaml 
+  262  juju deploy k8s.yaml
+  263  watch -c juju status --color
+  264  juju ssh kubernetes-worker/0
+  265  cp k8s.yaml k8s-minimal.yaml
+  266  nano k8s-minimal.yaml
+  267  wget https://github.com/wercker/stern/releases/download/1.5.1/stern_linux_amd64
+  268  chmod +x stern_linux_amd64 && mv stern_linux_amd64 /usr/local/bin/
+  269  sudo chmod +x stern_linux_amd64 && sudo  mv stern_linux_amd64 /usr/local/bin/
+  270  cat /etc/maas/regiond.conf 
+  271  sudo cat /etc/maas/regiond.conf 
+  272  sudo cat /etc/maas/rackd.conf 
+  273  nano k8s-minimal.yaml 
+  274  juju status
+  275  juju deploy k8s-minimal.yaml
+  276  nano k8s-minimal.yaml 
+  277  juju deploy k8s-minimal.yaml
+  278  watch -c juju status --color
+  279  juju ssh kubernetes-worker/2
+  280  juju ssh kubernetes-worker/1
+  281  juju ssh kubernetes-worker/2
+  282  juju ssh kubernetes-worker/1
+  283  juju ssh kubernetes-worker/0
+  284  juju ssh kubernetes-worker/1
+  285  juju ssh kubernetes-worker/2
+  286  juju ssh kubernetes-worker/1
+  287  juju ssh kubernetes-worker/2
+  288  juju resolved kubernetes-worker/2
+  289  watch -c juju status --color
+  290  juju ssh kubernetes-worker-storage/0
+  291  juju status
+  292  juju ssh kubernetes-worker-storage/0
+  293  juju destroy-model k8s
+  294  juju models
+  295  juju destroy-model kontron
+  296  juju add-model kontron
+  297  juju deploy k8s-minimal.yaml
+  298  watch -c juju status --color
+  299  cd ../2ndMECHackathon/
+  300  cd madcharts/
+  301  git pull origin master
+  302  cd ..
+  303  ls 
+  304  ls -la openalpr-data/
+  305  ls -la openalpr-data/cars_brad/
+  306  cd openalpr-data/
+  307  ls cars_markus/
+  308  tar cfz cars_brad.tgz cars_brad/
+  309  tar cfz cars_markus.tgz cars_markus
+  310  for i in 0 1 2 ; do juju scp ./cars_brad.tgz kubernetes-worker/$i:./; done
+  311  juju ssh kubernetes-worker/0 ls
+  312  watch -c juju status --color
+  313  cd ..
+  314  nano nvidia-smi.yaml
+  315  watch -c juju status --color
+  316  juju ssh kubernetes-worker/0
+  317  juju run --application kubernetes-worker "nvidia-smi"
+  318* for i in 0 1 2 ; do juju ssh kubernetes-worker/$i "sudo nvidia-smi"; done 
+  319  watch -c juju status --color
+  320  juju ssh kubernetes-worker-storage/0
+  321  juju config help
+  322  juju help  config
+  323  juju config kubernetes-worker-storage labels=""
+  324  juju resolved kubernetes-worker-storage/0
+  325  watch -c juju status --color
+  326  kubectl get pods --show-labels
+  327  kubectl get nodes --show-labels
+  328  kubectl label nodes kontron-node01-cpu01 nodeType=storage
+  329  kubectl get nodes -w
+  330  kubectl cluster-info
+  331  nano nvidia-smi.yaml 
+  332  kubectl create -f nvidia-smi.yaml
+  333  kubectl get pods -w -o wide
+  334  kubectl describe pod nvidia-smi-97xlj
+  335  kubectl get pods -w -o wide
+  336  stern nvidia-smi
+  337  sudo mv /usr/local/bin/stern_linux_amd64 /usr/local/bin/stern
+  338  stern nvidia-smi
+  339  kubectl create -f nvidia-smi.yaml 
+  340  ls 
+  341  mkdir day1
+  342  history
+  343  history | tee -a day1/history.txt 
