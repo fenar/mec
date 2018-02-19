@@ -1,0 +1,127 @@
+{{- $release := .Release.Name -}}
+{{- $releaseNamespace := .Release.Namespace -}}
+{{- $releaseService := .Release.Service -}}
+{{- $chart := .Chart.Name -}}
+{{- $chartVersion := .Chart.Version -}}
+{{- $repo := .Values.moneroCluster.image.repo -}}
+{{- $image := .Values.moneroCluster.image.name -}}
+{{- $tag := .Values.moneroCluster.image.dockerTag -}}
+{{- $clusterName := .Values.moneroCluster.settings.clusterName | trunc 24 -}}
+{{- $name := .Values.moneroCluster.service.name | trunc 24 -}}
+{{- $gpu := .Values.moneroCluster.settings.gpu -}}
+{{- $nodes := (int .Values.moneroCluster.settings.nodes) -}}
+{{- $workersPerNode := (int .Values.moneroCluster.settings.workersPerNode) -}}
+{{- $cpusPerWorker := ( int .Values.moneroCluster.settings.cpusPerWorker) -}}
+{{- $gpuType := .Values.moneroCluster.settings.gpuType -}}
+{{- $nodeSelector := .Values.moneroCluster.settings.nodeSelector -}}
+{{- $coin := .Values.moneroCluster.settings.coin -}}
+
+---
+{{ range $node, $nbn := until $nodes }}
+{{ range $worker, $nbw := until $workersPerNode }}
+# Definiting a scalable cluster
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: worker-{{ $clusterName }}-{{ $node }}-{{ $worker }}
+  namespace: {{ $releaseNamespace }}
+  labels:
+    app: {{ $name }}
+    cluster: {{ $clusterName }}
+    heritage: {{ $releaseService }}
+    chart: {{ $chart }}-{{ $chartVersion }}
+    release: {{ $release }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster: {{ $clusterName }}
+      node: {{ $node | quote }}
+      worker: {{ $worker | quote }}
+      app: {{ $name }}
+      heritage: {{ $releaseService }}
+      chart: {{ $chart }}-{{ $chartVersion }}
+      release: {{ $release }}
+  template:
+    metadata:
+      labels:
+        cluster: {{ $clusterName }}
+        node: {{ $node | quote }}
+        worker: {{ $worker | quote }}
+        app: {{ $name }}
+        heritage: {{ $releaseService }}
+        chart: {{ $chart }}-{{ $chartVersion }}
+        release: {{ $release }}
+    spec:
+      containers:
+      - name: xmr-miner-{{ $clusterName }}
+        image: {{ $repo }}/{{ $image }}:{{ $tag }}-{{ $gpuType }}
+        command: [ "/usr/bin/xmr-stak-sigint" ]
+        {{ if eq $gpuType "amd" }}
+        securityContext:
+          privileged: true
+        {{ end }}
+        resources:
+          requests:
+            cpu: {{ $cpusPerWorker }}000m
+            memory: 1024Mi
+            {{ if eq $gpuType "nvidia" }}
+            alpha.kubernetes.io/nvidia-gpu: 1
+            {{ end }}
+          limits:
+            cpu: {{ mul 2 $cpusPerWorker }}000m
+            memory: 1024Mi
+            {{ if eq $gpuType "nvidia" }}
+            alpha.kubernetes.io/nvidia-gpu: 1
+            {{ end }}
+        env:
+        {{ if eq $gpuType "nvidia" }}
+        - name: LD_LIBRARY_PATH
+          value: "$LD_LIBRARY_PATH:/usr/lib/nvidia:/usr/lib/cuda"
+        {{ end }}
+        {{ if eq $gpuType "amd" }}
+        - name: LD_LIBRARY_PATH
+          value: "$LD_LIBRARY_PATH:/opt/amdgpu-pro/lib:/usr/lib/x86_64-linux-gnu"
+        {{ end }}
+        volumeMounts:
+        - name: {{ $release }}-config
+          mountPath: /config
+        {{ if eq $gpuType "nvidia" }}
+        - mountPath: /usr/local/nvidia/bin
+          name: bin
+        - mountPath: /usr/lib/nvidia
+          name: lib
+        - mountPath: /usr/lib/cuda
+          name: libcuda
+        {{ end }}
+        {{ if eq $gpuType "amd" }}
+        - mountPath: /dev/dri
+          name: dri
+        {{ end }}
+      volumes:
+      - name: {{ $release }}-config
+        configMap:
+          name: {{ $release }}-config
+      {{ if eq $gpuType "nvidia" }}
+      - name: bin
+        hostPath:
+          path: /usr/lib/nvidia-384/bin
+      - name: lib
+        hostPath:
+          path: /usr/lib/nvidia-384
+      - name: libcuda
+        hostPath:
+          path: /usr/lib/x86_64-linux-gnu
+      {{ end }}
+      {{ if eq $gpuType "amd" }}
+      - name: dri
+        hostPath:
+          path: /dev/dri
+      {{ end }}
+      {{ if ne $nodeSelector "*" }}
+      nodeSelector: 
+        kubernetes.io/gpu-name: {{ $nodeSelector }}
+      {{ end }}
+---
+{{ end }}
+{{ end }}

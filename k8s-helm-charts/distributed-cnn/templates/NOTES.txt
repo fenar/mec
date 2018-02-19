@@ -1,0 +1,10 @@
+This chart has deployed a cluster a Distributed CNN. It has: 
+
+* {{ .Values.tfCluster.settings.jobs.ps }} parameter servers
+* {{ .Values.tfCluster.settings.jobs.worker }} workers
+{{ if .Values.tfCluster.settings.isGpu }}* It runs with GPU activated{{ end }}
+
+Enjoy Tensorflow on {{.Values.tensorboard.service.dns}} when the service is fully deployed, which takes a few minutes. 
+
+You can monitor the status with "kubectl get pods"
+

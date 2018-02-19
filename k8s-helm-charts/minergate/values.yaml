@@ -1,0 +1,19 @@
+global:
+  imagePullPolicy: IfNotPresent
+
+moneroCluster:
+  service:
+    name: monero
+  image: 
+    repo: samnco
+    name: minergate
+    dockerTag: latest
+  settings:
+    clusterName: ob
+    pool: minergate
+    coin: "-xmr"
+    nodes: 3
+    workersPerNode: 2
+    cpusPerWorker: 2
+    gpuComplexity: 3
+    username: samnco@gmail.com

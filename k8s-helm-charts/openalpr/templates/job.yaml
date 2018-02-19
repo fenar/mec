@@ -1,0 +1,79 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "fullname" . -}}-{{ .Values.type | lower }}-{{ .Values.parallelism }}-{{ .Values.resources.requests.cpu | lower }}-{{ .Values.resources.requests.memory | lower }}-{{ .Values.gpuType | lower }}
+spec:
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}
+    spec:
+      containers:
+      - name: openalpr
+        
+        image: {{ .Values.image -}}:{{- if eq .Values.gpuType "nvidia" }}latest-3.3.1-16.04-cuda-2{{- else }}latest-3.3.1-16.04-nocuda{{- end }}
+        command: {{ .Values.command }}
+        env:
+        - name: JOB_NAME
+          value: {{ template "fullname" . -}}-{{ .Values.type | lower }}-{{ .Values.parallelism }}-{{ .Values.resources.requests.cpu | lower }}-{{ .Values.resources.requests.memory | lower }}-{{ .Values.gpuType | lower }}
+       {{ if eq .Values.gpuType "nvidia" }}
+        - name: LD_LIBRARY_PATH
+          value: "$LD_LIBRARY_PATH:/usr/lib/nvidia:/usr/lib/cuda"
+        {{ end }}
+        # {{ if eq .Values.gpuType "amd" }}
+        # - name: LD_LIBRARY_PATH
+        #   value: "$LD_LIBRARY_PATH:/opt/amdgpu-pro/lib:/usr/lib/x86_64-linux-gnu"
+        # {{ end }}
+        volumeMounts:
+        - name: config
+          mountPath: /etc/openalpr
+        - name: {{ .Values.storage.name }}
+          mountPath: /data
+        {{ if eq .Values.gpuType "nvidia" }}
+        - mountPath: /usr/local/nvidia/bin
+          name: bin
+        - mountPath: /usr/lib/nvidia
+          name: lib
+        - mountPath: /usr/lib/cuda
+          name: libcuda
+        {{ end }}
+        # {{ if eq .Values.gpuType "amd" }}
+        # - mountPath: /dev/dri
+        #   name: dri
+        # {{ end }}
+        resources:
+          requests: 
+{{ toYaml .Values.resources.requests | indent 12 }}
+            {{ if eq .Values.gpuType "nvidia" }}
+            alpha.kubernetes.io/nvidia-gpu: 1
+            {{ end }}
+          limits:
+{{ toYaml .Values.resources.limits | indent 12 }}
+            {{ if eq .Values.gpuType "nvidia" }}
+            alpha.kubernetes.io/nvidia-gpu: 1
+            {{ end }}
+      restartPolicy: Never
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "fullname" . }}-config
+      - name: {{ .Values.storage.name }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.storage.name }}
+      {{ if eq .Values.gpuType "nvidia" }}
+      - name: bin
+        hostPath:
+          path: /usr/lib/nvidia-384/bin
+      - name: lib
+        hostPath:
+          path: /usr/lib/nvidia-384
+      - name: libcuda
+        hostPath:
+          path: /usr/lib/x86_64-linux-gnu
+      {{ end }}
+      # {{ if eq .Values.gpuType "amd" }}
+      # - name: dri
+      #   hostPath:
+      #     path: /dev/dri
+      # {{ end }}

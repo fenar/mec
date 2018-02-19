@@ -1,0 +1,31 @@
+# Default values for etcd.
+image:
+  # Images to look for: https://hub.docker.com/r/samnco/juju-etcd-backup
+  repository: samnco/juju-agent 
+  tag: 0.0.5
+  pullPolicy: Always
+service:
+  schedule: "58 * * * *"
+  archiveFolder: etcd
+  archiveNamePrefix: etcddump 
+  archiveHistory: 4
+juju:
+  # Juju mode to use. If set to controller, will perform a full backup of the controller
+  model: default
+  # Index of the unit to do the backup from
+  # must be easyrsa, etcd or kubernetes-master. 
+  application: etcd
+  unit: 0
+  # note: name of archive will be archiveNamePrefix-YYYYMMDDHH
+resources: 
+  requests:
+   cpu: 100m
+   memory: 128Mi
+  limits:
+   cpu: 200m
+   memory: 512Mi
+persistence:
+  enabled: true
+  # If persistence is enabled and existingClaim is not set then will 
+  # default to fullname
+  existingClaim: backup

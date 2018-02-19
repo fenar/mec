@@ -1,0 +1,7 @@
+This chart has created 
+
+* a PV {{ .Values.storage.name }} of {{ .Values.storage.pv.capacity }} capacity in {{ .Values.storage.accessMode }} mode
+* a PVC {{ .Values.storage.name }} of {{ .Values.storage.pvc.request }} in {{ .Values.storage.accessMode }} mode 
+
+They consume the EFS volume {{.Values.global.services.aws.efs.id}}.efs.{{.Values.global.services.aws.region}}.amazonaws.com
+

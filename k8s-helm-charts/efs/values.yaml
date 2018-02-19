@@ -1,0 +1,14 @@
+global:
+  services:
+    aws:
+      region: us-east-1
+      efs:
+        id: fs-47cd610e
+
+storage:
+  name: tensorflow-fs
+  accessMode: ReadWriteMany
+  pv: 
+    capacity: "900Gi"
+  pvc:
+    request: "750Gi"

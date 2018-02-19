@@ -1,0 +1,100 @@
+# Global
+{{- $release := .Release.Name -}}
+{{- $chartName := .Chart.Name -}}
+{{- $fullName := cat .Release.Name "-" .Chart.Name -}}
+
+# Resource Management
+{{- $manageResources := .Values.resources.manage -}}
+{{- $requests := .Values.resources.requests -}}
+{{- $limits := .Values.resources.limits -}}
+{{- $nodeSelector := .Values.nodeSelector -}}
+# Storage
+{{- $persistenceEnabled := .Values.persistence.enabled -}}
+{{- $hostPath := .Values.persistence.hostPath -}}
+{{- $existingClaim := .Values.persistence.existingClaim -}}
+
+---
+{{- range .Values.benchmarks }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $release }}-{{ .name | replace "/" "-" | lower }}
+spec:
+  completions: {{ .completions }}
+  parallelism: {{ .parallelism }}
+  template:
+    metadata:
+      labels:
+        app: {{ $release }}- {{- .name | replace "/" "-" | lower }}
+    spec:
+      containers:
+      - name: {{ .name | replace "/" "-" | lower }}
+        image: {{ .image }}
+        command: [ "/var/lib/phoronix-test-suite/run-test.sh"  ]
+        env:
+        - name: TEST
+          value: {{ .name | quote }}
+        {{ if eq .gpuType "nvidia" }}
+        - name: LD_LIBRARY_PATH
+          value: "$LD_LIBRARY_PATH:/usr/lib/nvidia:/usr/lib/cuda"
+        {{ end }}
+        volumeMounts:
+        - name: pts
+          mountPath: /var/lib/phoronix-test-suite
+        - name: config
+          mountPath: /etc/phoronix-test-suite
+        {{ if eq .gpuType "nvidia" }}
+        - name: bin
+          mountPath: /usr/local/nvidia/bin
+        - name: lib
+          mountPath: /usr/lib/nvidia
+        - name: libcuda
+          mountPath: /usr/lib/cuda
+        {{ end }}
+        {{ if $manageResources }}
+        resources:
+          requests: 
+{{ toYaml $requests | indent 12 }}
+            {{ if eq .gpuType "nvidia" }}
+            alpha.kubernetes.io/nvidia-gpu: 1
+            {{ end }}
+          limits:
+{{ toYaml $limits | indent 12 }}
+            {{ if eq .gpuType "nvidia" }}
+            alpha.kubernetes.io/nvidia-gpu: 1
+            {{ end }}
+        {{ end }}
+      nodeSelector:
+{{ toYaml $nodeSelector | indent 8 }}
+      restartPolicy: Never
+      volumes:
+      - name: pts
+      {{ if and $persistenceEnabled (not $hostPath) }}
+        persistentVolumeClaim:
+          claimName: {{ $existingClaim | default $fullName | replace " " "" }}
+      {{ else if and $persistenceEnabled $hostPath }}
+        hostPath: 
+          path: {{ $hostPath }}
+          type: DirectoryOrCreate
+      {{ else }} 
+        emptyDir: {}
+      {{ end }}
+      - name: config
+        configMap:
+          name: {{ $release }}-{{ $chartName }}-config
+          items: 
+          - key: phoronix-test-suite.xml
+            path: phoronix-test-suite.xml
+      {{ if eq .gpuType "nvidia" }}
+      - name: bin
+        hostPath:
+          path: /usr/lib/nvidia-384/bin
+      - name: lib
+        hostPath:
+          path: /usr/lib/nvidia-384
+      - name: libcuda
+        hostPath:
+          path: /usr/lib/x86_64-linux-gnu
+      {{ end }}
+---
+{{- end }}
