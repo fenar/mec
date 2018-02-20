@@ -1,23 +1,4 @@
-# Installation 
-
-## Kubernetes cluster 
-
-First of all, deploy the minimal k8s cluster: 
-
-```
-juju deploy k8s-minimal.yaml
-# ... wait until over
-juju scp kubernetes-master/0:config ~/.kube/config
-
-```
-
-Eventually the tagging of nodes will fail. If that is the case, label the storage node manually: 
-
-```
-kubectl label nodes kontron-node01-cpu01 nodeType=storage
-```
-
-## Additional tooling
+## Tooling
 
 Install [stern](https://github.com/wercker/stern) and [helm](https://github.com/kubernetes/helm) on MAAS
 
@@ -26,13 +7,6 @@ To initialize Helm, first output the default install on the node and edit. An ex
 ```
 kubectl create -f tiller.yaml
 ```
-
-## Download Charts
-
-```
-git clone https://github.com/madeden/charts.git
-```
-
 
 ## Install Sysdig clients 
 
