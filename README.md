@@ -1,11 +1,4 @@
-# MEC SWITCH FABRIC
-Mobile Edge Computing (MEC) POD IaaS Build-Up <br>
-<br>-----<br>
- This project aims to deploy: <br> 
-(1) Small Scale Openstack with Calico L3 Network Fabric , OpenBaton acting as Service Orchestrator <br>
-(2) Small Scale Kubernetes with available GPU installed nodes <br>
-<br><br>
-# MAAS & JUJU SETUP
+# Prep-Step Before Deployment: MAAS & JUJU SETUP
 ```sh
 ubuntu@OrangeBox140:~/.local/share/juju$ cat clouds.yaml
 clouds:
@@ -22,11 +15,12 @@ credentials:
 ```
 <br>-----<br>
 
-
-Deploying Ubuntu Openstack with KVM and Nova-LXD Hypervisors, together with Calico Network Fabric and OpenBaton as Service Orchestrator.
-
+# MEC IaaS Deployments
+Mobile Edge Computing (MEC) POD IaaS Build-Up <br>
 <br>-----<br>
-Add following lines to /etc/bird/bird.conf @ bird (Route Reflector) machine <br>
+ This project aims to deploy: <br> 
+(1) Openstack: Small Scale Openstack with Calico L3 Network Fabric , OpenBaton acting as Service Orchestrator <br>
+    Add following lines to /etc/bird/bird.conf @ bird (Route Reflector) machine <br>
 ```sh
 protocol bgp ExtRouter {
   description "ExtRouter"; 
@@ -39,10 +33,14 @@ protocol bgp ExtRouter {
 } 
 ```
 On the Mikrotik Router:<br>
+```sh
 (a) Change the AS number of the router: BGP → Instances, default, AS 64511, Client To Client Reflection ✓. <br>
 (b) Add peers: BGP → Peers, Add New, Name "calico-bird", Remote address <bird-ip-addr>, Remote AS 64511, Route Reflect ✓. <br>
     -> Check status: BGP → Peers, note state=established <br>
 <br>-----<br>
+(2) Kubernetes: Small Scale Kubernetes with available GPU installed nodes <br>
+```
+
 
 
 
