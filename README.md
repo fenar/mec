@@ -37,6 +37,10 @@ On the Mikrotik Router:<br>
 (b) Add peers: BGP → Peers, Add New, Name "calico-bird", Remote address <bird-ip-addr>, Remote AS 64511, Route Reflect ✓. <br>
     -> Check status: BGP → Peers, note state=established <br>
 ```
+(1-B) In order to pass sctp traffic following kernel modules needs to be loaded:<br>
+sudo modprobe nf_conntrack_proto_sctp <br>
+sudo modprobe nf_nat_proto_sctp <br>
+
 (2) Kubernetes: Small Scale Kubernetes with available GPU installed nodes <br>
 (2-A) We will setup Stern & Helm & Sysdig. <br>
 (2-B) We will setup NFS & Samba for File Storage & Sharing Across K8S Nodes & Workloads. <br>
