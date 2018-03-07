@@ -11,7 +11,7 @@ services:
     bindings:
       bgp-route-reflector: management
     options:
-      enable-ipv6: true
+      enable-ipv6: false
     to:
       - "0"
   keystone:
@@ -20,8 +20,7 @@ services:
     options:
       admin-password: admin
       openstack-origin: cloud:xenial-newton
-      worker-multiplier: 0.25
-#     preferred-api-version: 3
+      worker-multiplier: 0.1
     annotations:
       gui-x: "500"
       gui-y: "0"
@@ -92,7 +91,6 @@ services:
       block-devices: /dev/sdb
       overwrite: true
       storage-type: zfs
-#      source: ppa:ubuntu-lxc/lxd-stable
     annotations:
       gui-x: "750"
       gui-y: "250"
@@ -101,7 +99,7 @@ services:
     num_units: 6
     options:
       openstack-origin: cloud:xenial-newton
-      block-device: sdc
+      block-device: sdb
       overwrite: "true"
       enabled-services: all
       worker-multiplier: 0.1
@@ -135,7 +133,7 @@ services:
     num_units: 1
     options:
       openstack-origin: cloud:xenial-newton
-      worker-multiplier: 0.25
+      worker-multiplier: 0.1
     annotations:
       gui-x: "2099"
       gui-y: "1267.5"
@@ -152,7 +150,7 @@ services:
       openstack-origin: cloud:xenial-newton
       neutron-plugin: Calico
       neutron-security-groups: true
-      worker-multiplier: 0.25
+      worker-multiplier: 0.1
       prefer-ipv6: false
     annotations:
       "gui-x": "500"
@@ -178,7 +176,7 @@ services:
       openstack-origin: cloud:xenial-newton
       network-manager: Neutron
       console-access-protocol: novnc
-      worker-multiplier: 0.25
+      worker-multiplier: 0.1
     annotations:
       gui-x: "931"
       gui-y: "90"
