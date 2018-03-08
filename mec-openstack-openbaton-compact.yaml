@@ -14,15 +14,17 @@ services:
       enable-ipv6: false
     to:
       - "0"
-  keystone:
-    charm: "cs:xenial/keystone"
-    num_units: 1
+  cinder:
+    charm: "cs:xenial/cinder"
+    num_units: 2
     options:
-      admin-password: admin
       openstack-origin: cloud:xenial-newton
-      worker-multiplier: 0.25
+      block-device: sdb
+      overwrite: "true"
+      enabled-services: all
+      worker-multiplier: 0.2
     annotations:
-      gui-x: "500"
+      gui-": "750"
       gui-y: "0"
     bindings:
       public: management
@@ -30,18 +32,6 @@ services:
       internal: management
     to:
       - "1"
-  mysql:
-    charm: "cs:xenial/percona-cluster"
-    num_units: 1
-    annotations:
-      gui-x: "0"
-      gui-y: "250"
-    options:
-      max-connections: 1000
-      innodb-buffer-pool-size: 256M
-    bindings:
-      access: management
-    to:
       - "2"
   nova-compute-kvm:
     charm: "cs:xenial/nova-compute"
@@ -62,8 +52,8 @@ services:
       image-service: management
       neutron-plugin: management
     to:
-      - "3"
-      - "4"
+      - "1"
+      - "2"
   nova-compute-lxd:
     charm: "cs:nova-compute"
     num_units: 2
@@ -77,15 +67,15 @@ services:
       cloud-compute: management
       amqp: management
       internal: management
-      lxd: management 
+      lxd: management
       image-service: management
       neutron-plugin: management
     annotations:
       gui-x: "250"
       gui-y: "250"
     to:
-      - "5"
-      - "6"
+      - "3"
+      - "4"
   lxd:
     charm: "cs:lxd"
     options:
@@ -95,25 +85,35 @@ services:
     annotations:
       gui-x: "750"
       gui-y: "250"
-  cinder:
-    charm: "cs:xenial/cinder"
-    num_units: 2
+  keystone:
+    charm: "cs:xenial/keystone"
+    num_units: 1
     options:
+      admin-password: admin
       openstack-origin: cloud:xenial-newton
-      block-device: sdb
-      overwrite: "true"
-      enabled-services: all
-      worker-multiplier: 0.2
+      worker-multiplier: 0.25
     annotations:
-      gui-": "750"
+      gui-x: "500"
       gui-y: "0"
     bindings:
       public: management
       admin: management
       internal: management
-    to: 
-      - "3"
-      - "4"
+    to:
+      - lxd:0
+  mysql:
+    charm: "cs:xenial/percona-cluster"
+    num_units: 1
+    annotations:
+      gui-x: "0"
+      gui-y: "250"
+    options:
+      max-connections: 1000
+      innodb-buffer-pool-size: 256M
+    bindings:
+      access: management
+    to:
+      - lxd:1
   etcd:
     charm: "cs:etcd"
     num_units: 1
@@ -125,7 +125,7 @@ services:
       db: management
       certificates: management
     to: 
-      - lxd:0
+      - lxd:2
   glance:
     charm: "cs:xenial/glance"
     num_units: 1
@@ -141,7 +141,7 @@ services:
       admin: management
       internal: management
     to:
-      - lxd:1
+      - lxd:3
   neutron-api:
     charm: "cs:~project-calico/neutron-api"
     num_units: 1
@@ -160,7 +160,7 @@ services:
       admin: management
       internal: management
     to:
-      - lxd:2
+      - lxd:4
   neutron-calico:
     charm: "cs:~project-calico/neutron-calico"
     options:
@@ -224,7 +224,7 @@ services:
       "": management
       client: management
     to:
-      - lxd:0
+      - lxd:3
   openbaton:
     charm: "./openbaton-charm"
     series: xenial
@@ -240,7 +240,7 @@ services:
       vnfm: management
       identity-credentials: management
     to:
-      - lxd:1
+      - lxd:4
 relations:
   - - "nova-cloud-controller:image-service"
     - "glance:image-service"
@@ -317,19 +317,13 @@ machines:
     constraints: arch=amd64 tags=physical
   "1":
     series: xenial
-    constraints: arch=amd64 tags=keystone
+    constraints: arch=amd64 tags=dual-storage
   "2":
     series: xenial
-    constraints: arch=amd64 tags=physical
+    constraints: arch=amd64 tags=dual-storage
   "3":
     series: xenial
     constraints: arch=amd64 tags=dual-storage
   "4":
-    series: xenial
-    constraints: arch=amd64 tags=dual-storage
-  "5":
-    series: xenial
-    constraints: arch=amd64 tags=dual-storage
-  "6":
     series: xenial
     constraints: arch=amd64 tags=dual-storage

@@ -42,12 +42,11 @@ openstack flavor create m1.xlarge --id auto --ram 32768 --disk 50 --vcpus 16
 openstack quota  set --ram 204800 --cores 200 --instances 100 admin
 neutron quota-update --security-group 100 --security-group-rule 500 
 #image upload
-glance image-create --name=cirros_0.3.5 --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/cirros-0.3.5-x86_64-disk.img
+glance image-create --name=cirros_0.4.0 --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/cirros-0.4.0-x86_64-disk.img
 glance image-create --name=ubuntu_16.04_kvm --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/xenial-server-cloudimg-amd64-disk1.img
 glance image-create --name=ubuntu_16.04_lxc --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/xenial-server-cloudimg-amd64-root.tar.xz
-glance image-create --name=oai-lxc-image --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/openai-20171213.tar.gz
-glance image-create --name oai-kvm-image --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/OpenAirInterfaceEPC-20171213.qcow2
-glance image-create --name openims --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/openims.img
+glance image-create --name=oai-lxc-image --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/oai-lxc-image.tar.gz
+glance image-create --name oai-kvm-image --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/oai-kvm-image.qcow2
 
 for i in ` openstack hypervisor list -f value  -c "Hypervisor Hostname"` ; do echo -n $i, ; openstack hypervisor show $i -c hypervisor_type -f value ; done > hypervisor-hosts
 LXD_HOST=`grep lxd hypervisor-hosts  | cut -d "," -f 1 `
@@ -57,7 +56,7 @@ rm -rf hypervisor-hosts
 openstack aggregate create az-kvm --zone az-kvm
 openstack aggregate create az-lxd --zone az-lxd
 openstack aggregate set az-lxd --property exclusive=true
-for lxdnodes in ${LXD_HOST[@]} ; do openstack aggregate add host az-lxd ${lxdnodes:0:12} ; done
-for kvmnodes in ${KVM_HOST[@]} ; do openstack aggregate add host az-kvm ${kvmnodes:0:12} ; done
+for lxdnodes in ${LXD_HOST[@]} ; do openstack aggregate add host az-lxd ${lxdnodes:0:10} ; done
+for kvmnodes in ${KVM_HOST[@]} ; do openstack aggregate add host az-kvm ${kvmnodes:0:10} ; done
 
 exit
