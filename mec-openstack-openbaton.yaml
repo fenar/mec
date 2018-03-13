@@ -14,22 +14,6 @@ services:
       enable-ipv6: false
     to:
       - "0"
-  keystone:
-    charm: "cs:xenial/keystone"
-    num_units: 1
-    options:
-      admin-password: admin
-      openstack-origin: cloud:xenial-newton
-      worker-multiplier: 0.25
-    annotations:
-      gui-x: "500"
-      gui-y: "0"
-    bindings:
-      public: management
-      admin: management
-      internal: management
-    to:
-      - "1"
   mysql:
     charm: "cs:xenial/percona-cluster"
     num_units: 1
@@ -42,11 +26,12 @@ services:
     bindings:
       access: management
     to:
-      - "2"
+      - "1"
   nova-compute-kvm:
     charm: "cs:xenial/nova-compute"
     num_units: 2
     options:
+      config-flags: default_ephemeral_format=ext4
       enable-live-migration: true
       enable-resize: true
       migration-auth-type: ssh
@@ -62,12 +47,19 @@ services:
       image-service: management
       neutron-plugin: management
     to:
+      - "2"
       - "3"
-      - "4"
+  ntp:
+    annotations:
+      gui-x: '1000'
+      gui-y: '0'
+    charm: cs:ntp-24
+    num_units: 0
   nova-compute-lxd:
     charm: "cs:nova-compute"
     num_units: 2
     options:
+      config-flags: default_ephemeral_format=ext4
       openstack-origin: cloud:xenial-newton
       enable-live-migration: true
       enable-resize: true
@@ -77,24 +69,40 @@ services:
       cloud-compute: management
       amqp: management
       internal: management
-      lxd: management 
+      lxd: management
       image-service: management
       neutron-plugin: management
     annotations:
       gui-x: "250"
       gui-y: "250"
     to:
+      - "4"
       - "5"
-      - "6"
   lxd:
     charm: "cs:lxd"
     options:
       block-devices: /dev/sdb
       overwrite: true
-      storage-type: zfs
+      storage-type: btrfs
     annotations:
       gui-x: "750"
       gui-y: "250"
+  keystone:
+    charm: "cs:xenial/keystone"
+    num_units: 1
+    options:
+      admin-password: admin
+      openstack-origin: cloud:xenial-newton
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: "500"
+      gui-y: "0"
+    bindings:
+      public: management
+      admin: management
+      internal: management
+    to:
+      - lxd:0
   cinder:
     charm: "cs:xenial/cinder"
     num_units: 2
@@ -112,8 +120,8 @@ services:
       admin: management
       internal: management
     to: 
+      - "2"
       - "3"
-      - "4"
   etcd:
     charm: "cs:etcd"
     num_units: 1
@@ -125,7 +133,7 @@ services:
       db: management
       certificates: management
     to: 
-      - lxd:0
+      - lxd:1
   glance:
     charm: "cs:xenial/glance"
     num_units: 1
@@ -141,7 +149,7 @@ services:
       admin: management
       internal: management
     to:
-      - lxd:1
+      - lxd:0
   neutron-api:
     charm: "cs:~project-calico/neutron-api"
     num_units: 1
@@ -160,7 +168,7 @@ services:
       admin: management
       internal: management
     to:
-      - lxd:2
+      - lxd:1
   neutron-calico:
     charm: "cs:~project-calico/neutron-calico"
     options:
@@ -213,7 +221,7 @@ services:
     bindings:
       amqp: management
     to:
-      - lxd:2
+      - lxd:0
   easyrsa:
     charm: "cs:~containers/easyrsa"
     num_units: 1
@@ -224,7 +232,7 @@ services:
       "": management
       client: management
     to:
-      - lxd:0
+      - lxd:1
   openbaton:
     charm: "./openbaton-charm"
     series: xenial
@@ -240,7 +248,7 @@ services:
       vnfm: management
       identity-credentials: management
     to:
-      - lxd:1
+      - lxd:0
 relations:
   - - "nova-cloud-controller:image-service"
     - "glance:image-service"
@@ -310,26 +318,26 @@ relations:
     - "lxd:lxd"
   - - "openbaton:identity-credentials"
     - "keystone:identity-credentials"
-
+  - - "ntp:juju-info"
+    - "nova-compute-kvm:juju-info"
+  - - "ntp:juju-info"
+    - "nova-compute-lxd:juju-info"
 machines: 
   "0":
     series: xenial
-    constraints: arch=amd64 tags=physical
+    constraints: arch=amd64 tags=kontron
   "1":
     series: xenial
-    constraints: arch=amd64 tags=keystone
+    constraints: arch=amd64 tags=kontron
   "2":
     series: xenial
-    constraints: arch=amd64 tags=physical
+    constraints: arch=amd64 tags=Dell
   "3":
     series: xenial
-    constraints: arch=amd64 tags=dual-storage
+    constraints: arch=amd64 tags=Dell
   "4":
     series: xenial
     constraints: arch=amd64 tags=dual-storage
   "5":
-    series: xenial
-    constraints: arch=amd64 tags=dual-storage
-  "6":
     series: xenial
     constraints: arch=amd64 tags=dual-storage

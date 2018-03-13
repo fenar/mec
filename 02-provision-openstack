@@ -33,10 +33,11 @@ openstack security group rule create --proto tcp --dst-port 3389 default
 openstack keypair create  --public-key ~/.ssh/id_rsa.pub default
 
 #Remove the m1.tiny as it is too small for Ubuntu.
-openstack flavor create m1.small --id auto --ram 4096 --disk 20 --vcpus 2
-openstack flavor create m1.medium --id auto --ram 8192 --disk 30 --vcpus 4
-openstack flavor create m1.large --id auto --ram 16384 --disk 40 --vcpus 8
-openstack flavor create m1.xlarge --id auto --ram 32768 --disk 50 --vcpus 16
+openstack flavor create m1.nano --id auto --ram 1024 --disk 10 --vcpus 1
+openstack flavor create m1.small --id auto --ram 4096 --disk 40 --vcpus 2
+openstack flavor create m1.medium --id auto --ram 8192 --disk 60 --vcpus 4
+openstack flavor create m1.large --id auto --ram 16384 --disk 80 --vcpus 8
+openstack flavor create m1.xlarge --id auto --ram 32768 --disk 100 --vcpus 16
 
 #Modify quotas for the tenant to allow large deployments
 openstack quota  set --ram 204800 --cores 200 --instances 100 admin
@@ -47,6 +48,7 @@ glance image-create --name=ubuntu_16.04_kvm --visibility=public --container-form
 glance image-create --name=ubuntu_16.04_lxc --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/xenial-server-cloudimg-amd64-root.tar.xz
 glance image-create --name=oai-lxc-image --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/oai-lxc-image.tar.gz
 glance image-create --name oai-kvm-image --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/oai-kvm-image.qcow2
+glance image-create --name speedtest-kvm --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/SpeedTest01312018.qcow2
 
 for i in ` openstack hypervisor list -f value  -c "Hypervisor Hostname"` ; do echo -n $i, ; openstack hypervisor show $i -c hypervisor_type -f value ; done > hypervisor-hosts
 LXD_HOST=`grep lxd hypervisor-hosts  | cut -d "," -f 1 `
