@@ -14,29 +14,24 @@ services:
       enable-ipv6: false
     to:
       - "0"
-  cinder:
-    charm: "cs:xenial/cinder"
-    num_units: 2
-    options:
-      openstack-origin: cloud:xenial-newton
-      block-device: sdb
-      overwrite: "true"
-      enabled-services: all
-      worker-multiplier: 0.2
+  mysql:
+    charm: "cs:percona-cluster"
+    num_units: 1
     annotations:
-      gui-": "750"
-      gui-y: "0"
+      gui-x: "0"
+      gui-y: "250"
+    options:
+      max-connections: 1000
+      innodb-buffer-pool-size: 256M
     bindings:
-      public: management
-      admin: management
-      internal: management
+      access: management
     to:
       - "1"
-      - "2"
   nova-compute-kvm:
-    charm: "cs:xenial/nova-compute"
+    charm: "cs:nova-compute"
     num_units: 2
     options:
+      config-flags: default_ephemeral_format=ext4
       enable-live-migration: true
       enable-resize: true
       migration-auth-type: ssh
@@ -52,12 +47,19 @@ services:
       image-service: management
       neutron-plugin: management
     to:
-      - "1"
       - "2"
+      - "3"
+  ntp:
+    annotations:
+      gui-x: '1000'
+      gui-y: '0'
+    charm: cs:ntp-24
+    num_units: 0
   nova-compute-lxd:
     charm: "cs:nova-compute"
     num_units: 2
     options:
+      config-flags: default_ephemeral_format=ext4
       openstack-origin: cloud:xenial-newton
       enable-live-migration: true
       enable-resize: true
@@ -74,19 +76,19 @@ services:
       gui-x: "250"
       gui-y: "250"
     to:
-      - "3"
       - "4"
+      - "5"
   lxd:
     charm: "cs:lxd"
     options:
       block-devices: /dev/sdb
       overwrite: true
-      storage-type: zfs
+      storage-type: btrfs
     annotations:
       gui-x: "750"
       gui-y: "250"
   keystone:
-    charm: "cs:xenial/keystone"
+    charm: "cs:keystone"
     num_units: 1
     options:
       admin-password: admin
@@ -101,19 +103,25 @@ services:
       internal: management
     to:
       - lxd:0
-  mysql:
-    charm: "cs:xenial/percona-cluster"
-    num_units: 1
-    annotations:
-      gui-x: "0"
-      gui-y: "250"
+  cinder:
+    charm: "cs:cinder"
+    num_units: 2
     options:
-      max-connections: 1000
-      innodb-buffer-pool-size: 256M
+      openstack-origin: cloud:xenial-newton
+      block-device: sdb
+      overwrite: "true"
+      enabled-services: all
+      worker-multiplier: 0.2
+    annotations:
+      gui-": "750"
+      gui-y: "0"
     bindings:
-      access: management
-    to:
-      - lxd:1
+      public: management
+      admin: management
+      internal: management
+    to: 
+      - "2"
+      - "3"
   etcd:
     charm: "cs:etcd"
     num_units: 1
@@ -125,9 +133,9 @@ services:
       db: management
       certificates: management
     to: 
-      - lxd:2
+      - lxd:1
   glance:
-    charm: "cs:xenial/glance"
+    charm: "cs:glance"
     num_units: 1
     options:
       openstack-origin: cloud:xenial-newton
@@ -141,7 +149,7 @@ services:
       admin: management
       internal: management
     to:
-      - lxd:3
+      - lxd:0
   neutron-api:
     charm: "cs:~project-calico/neutron-api"
     num_units: 1
@@ -160,7 +168,7 @@ services:
       admin: management
       internal: management
     to:
-      - lxd:4
+      - lxd:1
   neutron-calico:
     charm: "cs:~project-calico/neutron-calico"
     options:
@@ -170,7 +178,7 @@ services:
       gui-x: "560"
       gui-y: "820"
   nova-cloud-controller:
-    charm: "cs:xenial/nova-cloud-controller"
+    charm: "cs:nova-cloud-controller"
     num_units: 1
     options:
       openstack-origin: cloud:xenial-newton
@@ -188,7 +196,7 @@ services:
     to:
       - lxd:0
   openstack-dashboard:
-    charm: "cs:xenial/openstack-dashboard"
+    charm: "cs:openstack-dashboard"
     num_units: 1
     options:
       openstack-origin: cloud:xenial-newton
@@ -205,7 +213,7 @@ services:
     to:
       - lxd:1
   rabbitmq-server:
-    charm: "cs:xenial/rabbitmq-server"
+    charm: "cs:rabbitmq-server"
     num_units: 1
     annotations:
       gui-x: "500"
@@ -213,7 +221,7 @@ services:
     bindings:
       amqp: management
     to:
-      - lxd:2
+      - lxd:0
   easyrsa:
     charm: "cs:~containers/easyrsa"
     num_units: 1
@@ -224,7 +232,7 @@ services:
       "": management
       client: management
     to:
-      - lxd:3
+      - lxd:1
   openbaton:
     charm: "./openbaton-charm"
     series: xenial
@@ -240,7 +248,57 @@ services:
       vnfm: management
       identity-credentials: management
     to:
-      - lxd:4
+      - lxd:0
+  swift-storage-z1:
+    charm: cs:swift-storage
+    num_units: 3
+    constraints: mem=16G
+    options:
+      zone: 1
+      block-device: sdb
+      overwrite: "true"
+    to:
+      - "6"
+      - "7"
+      - "8"
+  swift-storage-z2:
+    charm: cs:swift-storage
+    num_units: 3
+    constraints: mem=16G
+    options:
+      zone: 2
+      block-device: sdb
+      overwrite: "true"
+    to:
+      - "9"
+      - "10"
+      - "11"
+  swift-storage-z3:
+    charm: cs:swift-storage
+    num_units: 3
+    constraints: mem=16G
+    options:
+      zone: 3
+      block-device: sdb
+      overwrite: "true"
+    to:
+      - "12"
+      - "13"
+      - "14"
+  swift-proxy:
+    charm: cs:swift-proxy
+    num_units: 3
+    constraints: mem=4G
+    options:
+      zone-assignment: manual
+      replicas: 3
+      partition-power: 8
+      workers: 2
+      swift-hash: fdfef9d4-8b06-11e2-8ac0-531c923c8fae
+    to:
+      - "15"
+      - "16"
+      - "17"
 relations:
   - - "nova-cloud-controller:image-service"
     - "glance:image-service"
@@ -310,20 +368,82 @@ relations:
     - "lxd:lxd"
   - - "openbaton:identity-credentials"
     - "keystone:identity-credentials"
-
+  - - "ntp:juju-info"
+    - "nova-compute-kvm:juju-info"
+  - - "ntp:juju-info"
+    - "nova-compute-lxd:juju-info"
+  - - "swift-proxy:swift-storage"
+    - "swift-storage-z1:swift-storage"
+  - - "swift-proxy:swift-storage"
+    - "swift-storage-z2:swift-storage"
+  - - "swift-proxy:swift-storage"
+    - "swift-storage-z3:swift-storage"
+  - - "ntp:juju-info"
+    - "swift-proxy:juju-info"
+  - - "ntp:juju-info"
+    - "swift-storage-z1:juju-info"
+  - - "ntp:juju-info"
+    - "swift-storage-z2:juju-info"
+  - - "ntp:juju-info"
+    - "swift-storage-z3:juju-info"
+  - - "swift-proxy:object-store"
+    - "glance:object-store"
+  - - "swift-proxy:identity-service"
+    - "keystone:identity-service"
+  - - "swift-proxy:amqp"
+    - "rabbitmq-server:amqp"
 machines: 
   "0":
     series: xenial
-    constraints: arch=amd64 tags=physical
+    constraints: arch=amd64 tags=kontron
   "1":
     series: xenial
-    constraints: arch=amd64 tags=dual-storage
+    constraints: arch=amd64 tags=kontron
   "2":
     series: xenial
-    constraints: arch=amd64 tags=dual-storage
+    constraints: arch=amd64 tags=Dell
   "3":
     series: xenial
-    constraints: arch=amd64 tags=dual-storage
+    constraints: arch=amd64 tags=Dell
   "4":
     series: xenial
     constraints: arch=amd64 tags=dual-storage
+  "5":
+    series: xenial
+    constraints: arch=amd64 tags=dual-storage
+  "6":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "7":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "8":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "9":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "10":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "11":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "12":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "13":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "14":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "15":
+    series: xenial
+    constraints: arch=amd64 tags=kontron
+  "16":
+    series: xenial
+    constraints: arch=amd64 tags=kontron
+  "17":
+    series: xenial
+    constraints: arch=amd64 tags=kontron
