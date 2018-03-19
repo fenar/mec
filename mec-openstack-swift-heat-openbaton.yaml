@@ -279,6 +279,8 @@ services:
     options:
       openstack-origin: cloud:xenial-newton
       worker-multiplier: 0.2
+    bindings:
+      "": management
     to:
     - lxd:0
 relations:
