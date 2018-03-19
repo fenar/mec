@@ -1,0 +1,402 @@
+# Author: Fatih E. NAR
+# 
+series: xenial
+services:
+  bird:
+    charm: "cs:~project-calico/bird"
+    num_units: 1
+    annotations:
+      gui-x: "84"
+      gui-y: "720"
+    bindings:
+      bgp-route-reflector: management
+    options:
+      enable-ipv6: false
+    to:
+      - "0"
+  swift-proxy:
+    charm: cs:swift-proxy
+    num_units: 1
+    constraints: mem=4G
+    options:
+      zone-assignment: manual
+      replicas: 1
+      partition-power: 8
+      workers: 2
+      swift-hash: fdfef9d4-8b06-11e2-8ac0-531c923c8fae
+    to:
+      - "1"
+  cinder:
+    charm: "cs:cinder"
+    num_units: 2
+    options:
+      openstack-origin: cloud:xenial-newton
+      block-device: sdc
+      overwrite: "true"
+      enabled-services: all
+      worker-multiplier: 0.2
+    annotations:
+      gui-": "750"
+      gui-y: "0"
+    bindings:
+      public: management
+      admin: management
+      internal: management
+    to:
+      - "2"
+      - "3"
+  nova-compute-kvm:
+    charm: "cs:nova-compute"
+    num_units: 2
+    options:
+      config-flags: default_ephemeral_format=ext4
+      enable-live-migration: true
+      enable-resize: true
+      migration-auth-type: ssh
+      virt-type: kvm
+      openstack-origin: cloud:xenial-newton
+    annotations:
+      gui-x: "1042"
+      gui-y: "1254.5"
+    bindings:
+      cloud-compute: management
+      amqp: management
+      internal: management
+      image-service: management
+      neutron-plugin: management
+    to:
+      - "2"
+      - "3"
+  ntp:
+    annotations:
+      gui-x: '1000'
+      gui-y: '0'
+    charm: cs:ntp-24
+    num_units: 0
+  nova-compute-lxd:
+    charm: "cs:nova-compute"
+    num_units: 2
+    options:
+      config-flags: default_ephemeral_format=ext4
+      openstack-origin: cloud:xenial-newton
+      enable-live-migration: true
+      enable-resize: true
+      migration-auth-type: ssh
+      virt-type: lxd
+    bindings:
+      cloud-compute: management
+      amqp: management
+      internal: management
+      lxd: management
+      image-service: management
+      neutron-plugin: management
+    annotations:
+      gui-x: "250"
+      gui-y: "250"
+    to:
+      - "4"
+      - "5"
+  lxd:
+    charm: "cs:lxd"
+    options:
+      block-devices: /dev/sdb
+      overwrite: true
+      storage-type: btrfs
+    annotations:
+      gui-x: "750"
+      gui-y: "250"
+  mysql:
+    charm: "cs:percona-cluster"
+    num_units: 1
+    annotations:
+      gui-x: "0"
+      gui-y: "250"
+    options:
+      max-connections: 1000
+      innodb-buffer-pool-size: 256M
+    bindings:
+      access: management
+    to:
+      - lxd:0
+  keystone:
+    charm: "cs:keystone"
+    num_units: 1
+    options:
+      admin-password: admin
+      openstack-origin: cloud:xenial-newton
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: "500"
+      gui-y: "0"
+    bindings:
+      public: management
+      admin: management
+      internal: management
+    to:
+      - lxd:1
+  etcd:
+    charm: "cs:etcd"
+    num_units: 1
+    annotations:
+      gui-x: "182"
+      gui-y: "-586"
+    bindings:
+      "": management
+      db: management
+      certificates: management
+    to: 
+      - lxd:0
+  glance:
+    charm: "cs:glance"
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-newton
+      worker-multiplier: 0.2
+    annotations:
+      gui-x: "2099"
+      gui-y: "1267.5"
+    bindings:
+      "": management
+      public: management
+      admin: management
+      internal: management
+    to:
+      - lxd:1
+  neutron-api:
+    charm: "cs:~project-calico/neutron-api"
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-newton
+      neutron-plugin: Calico
+      neutron-security-groups: true
+      worker-multiplier: 0.2
+      prefer-ipv6: false
+    annotations:
+      "gui-x": "500"
+      "gui-y": "500"
+    bindings:
+      "": management
+      public: management
+      admin: management
+      internal: management
+    to:
+      - lxd:0
+  neutron-calico:
+    charm: "cs:~project-calico/neutron-calico"
+    options:
+      openstack-origin: cloud:xenial-newton
+      enable-ipv6: true
+    annotations:
+      gui-x: "560"
+      gui-y: "820"
+  nova-cloud-controller:
+    charm: "cs:nova-cloud-controller"
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-newton
+      network-manager: Neutron
+      console-access-protocol: novnc
+      worker-multiplier: 0.2
+    annotations:
+      gui-x: "931"
+      gui-y: "90"
+    bindings:
+      "": management
+      public: management
+      admin: management
+      internal: management
+    to:
+      - lxd:1
+  openstack-dashboard:
+    charm: "cs:openstack-dashboard"
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-newton
+      webroot: "/"
+      ubuntu-theme: "no"
+    annotations:
+      gui-x: "500"
+      gui-y: "250"
+    bindings:
+      "": management
+      website: management
+      shared-db: management
+      identity-service: management
+    to:
+      - lxd:0
+  rabbitmq-server:
+    charm: "cs:rabbitmq-server"
+    num_units: 1
+    annotations:
+      gui-x: "500"
+      gui-y: "250"
+    bindings:
+      amqp: management
+    to:
+      - lxd:1
+  easyrsa:
+    charm: "cs:~containers/easyrsa"
+    num_units: 1
+    annotations:
+      gui-x: "500"
+      gui-y: "250"
+    bindings:
+      "": management
+      client: management
+    to:
+      - lxd:0
+  openbaton:
+    charm: "./openbaton-charm"
+    series: xenial
+    num_units: 1
+    exposed: true
+    annotations:
+      "gui-x": "0"
+      "gui-y": "0"
+    bindings:
+      "": management
+      internal: management
+      website: management
+      vnfm: management
+      identity-credentials: management
+    to:
+      - lxd:1
+  swift-storage-z1:
+    charm: cs:swift-storage
+    num_units: 3
+    constraints: mem=16G
+    options:
+      zone: 1
+      block-device: sdb
+      overwrite: "true"
+    to:
+      - "6"
+      - "7"
+      - "8"
+  heat:
+    charm: cs:xenial/heat
+    num_units: 1
+    options:
+      openstack-origin: cloud:xenial-newton
+      worker-multiplier: 0.2
+    to:
+    - lxd:0
+relations:
+  - - "nova-cloud-controller:image-service"
+    - "glance:image-service"
+  - - "neutron-calico:etcd-proxy"
+    - "etcd:proxy"
+  - - "neutron-api:etcd-proxy"
+    - "etcd:proxy"
+  - - "neutron-calico:amqp"
+    - "rabbitmq-server:amqp"
+  - - "neutron-calico:neutron-plugin-api"
+    - "neutron-api:neutron-plugin-api"
+  - - "openstack-dashboard:identity-service"
+    - "keystone:identity-service"
+  - - "neutron-calico:neutron-plugin"
+    - "nova-compute-kvm:neutron-plugin"
+  - - "nova-compute-kvm:cloud-compute"
+    - "nova-cloud-controller:cloud-compute"
+  - - "nova-compute-kvm:amqp"
+    - "rabbitmq-server:amqp"
+  - - "nova-cloud-controller:identity-service"
+    - "keystone:identity-service"
+  - - "cinder:cinder-volume-service"
+    - "nova-cloud-controller:cinder-volume-service"
+  - - "cinder:amqp"
+    - "rabbitmq-server:amqp"
+  - - "glance:image-service"
+    - "cinder:image-service"
+  - - "neutron-api:neutron-api"
+    - "nova-cloud-controller:neutron-api"
+  - - "neutron-api:amqp"
+    - "rabbitmq-server:amqp"
+  - - "neutron-calico:bgp-route-reflector"
+    - "bird:bgp-route-reflector"
+  - - "nova-cloud-controller:shared-db"
+    - "mysql:shared-db"
+  - - "nova-cloud-controller:amqp"
+    - "rabbitmq-server:amqp"
+  - - "nova-compute-kvm:image-service"
+    - "glance:image-service"
+  - - "glance:identity-service"
+    - "keystone:identity-service"
+  - - "mysql:shared-db"
+    - "keystone:shared-db"
+  - - "nova-compute-kvm:shared-db"
+    - "mysql:shared-db"
+  - - "glance:shared-db"
+    - "mysql:shared-db"
+  - - "mysql:shared-db"
+    - "cinder:shared-db"
+  - - "cinder:identity-service"
+    - "keystone:identity-service"
+  - - "neutron-api:shared-db"
+    - "mysql:shared-db"
+  - - "neutron-api:identity-service"
+    - "keystone:identity-service"
+  - - "etcd"
+    - "easyrsa"
+  - - "nova-cloud-controller:cloud-compute"
+    - "nova-compute-lxd:cloud-compute"
+  - - "neutron-calico:neutron-plugin"
+    - "nova-compute-lxd:neutron-plugin"
+  - - "nova-compute-lxd:amqp"
+    - "rabbitmq-server:amqp"
+  - - "nova-compute-lxd:image-service"
+    - "glance:image-service"
+  - - "nova-compute-lxd:lxd"
+    - "lxd:lxd"
+  - - "openbaton:identity-credentials"
+    - "keystone:identity-credentials"
+  - - "ntp:juju-info"
+    - "nova-compute-kvm:juju-info"
+  - - "ntp:juju-info"
+    - "nova-compute-lxd:juju-info"
+  - - "swift-proxy:swift-storage"
+    - "swift-storage-z1:swift-storage"
+  - - "ntp:juju-info"
+    - "swift-proxy:juju-info"
+  - - "ntp:juju-info"
+    - "swift-storage-z1:juju-info"
+  - - "swift-proxy:object-store"
+    - "glance:object-store"
+  - - "swift-proxy:identity-service"
+    - "keystone:identity-service"
+  - - "swift-proxy:amqp"
+    - "rabbitmq-server:amqp"
+  - - "heat:identity-service"
+    - "keystone:identity-service"
+  - - "heat:amqp"
+    - "rabbitmq-server:amqp"
+  - - "heat:shared-db"
+    - "mysql:shared-db"
+machines: 
+  "0":
+    series: xenial
+    constraints: arch=amd64 tags=kontron
+  "1":
+    series: xenial
+    constraints: arch=amd64 tags=kontron
+  "2":
+    series: xenial
+    constraints: arch=amd64 tags=dual-storage
+  "3":
+    series: xenial
+    constraints: arch=amd64 tags=dual-storage
+  "4":
+    series: xenial
+    constraints: arch=amd64 tags=dual-storage
+  "5":
+    series: xenial
+    constraints: arch=amd64 tags=dual-storage
+  "6":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "7":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+  "8":
+    series: xenial
+    constraints: arch=amd64 tags=physical
