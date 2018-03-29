@@ -46,6 +46,8 @@ neutron quota-update --security-group 100 --security-group-rule 500
 glance image-create --name=cirros_0.4.0 --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/cirros-0.4.0-x86_64-disk.img
 glance image-create --name=ubuntu_16.04_kvm --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/xenial-server-cloudimg-amd64-disk1.img
 glance image-create --name=ubuntu_16.04_lxc --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/xenial-server-cloudimg-amd64-root.tar.xz
+glance image-create --name=ubuntu_14.04_kvm --visibility=public --container-format=ovf --disk-format=qcow2 <  /srv/data/trusty-server-cloudimg-amd64-disk1.img
+glance image-create --name=rancherOS --visibility=public --container-format=bare --disk-format=iso <  /srv/data/rancheros.iso
 glance image-create --name=oai-lxc-image --visibility=public --container-format=ovf --disk-format=raw <  /srv/data/oai-lxc-image.tar.gz
 glance image-create --name oai-kvm-image --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/oai-kvm-image.qcow2
 glance image-create --name speedtest-kvm --visibility=public --container-format=bare --disk-format=qcow2 < /srv/data/SpeedTest01312018.qcow2

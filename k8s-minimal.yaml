@@ -107,10 +107,10 @@ relations:
 machines:
   "0":
     series: xenial
-    constraints: arch=amd64 tags=k8s-master
+    constraints: arch=amd64 tags=physical
   "1":
     series: xenial
-    constraints: arch=amd64 tags=k8s-master
+    constraints: arch=amd64 tags=physical
   "2":
     series: xenial
     constraints: arch=amd64 tags=nvidia-gpu

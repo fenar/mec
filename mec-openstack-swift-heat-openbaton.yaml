@@ -28,11 +28,11 @@ services:
       - "1"
   cinder:
     charm: "cs:cinder"
-    num_units: 2
+    num_units: 3
     options:
       openstack-origin: cloud:xenial-newton
-      block-device: sdc
-      overwrite: "true"
+      block-device: sdb
+      overwrite: "false"
       enabled-services: all
       worker-multiplier: 0.2
     annotations:
@@ -45,9 +45,10 @@ services:
     to:
       - "2"
       - "3"
+      - "4"
   nova-compute-kvm:
     charm: "cs:nova-compute"
-    num_units: 2
+    num_units: 3
     options:
       config-flags: default_ephemeral_format=ext4
       enable-live-migration: true
@@ -67,6 +68,7 @@ services:
     to:
       - "2"
       - "3"
+      - "4"
   ntp:
     annotations:
       gui-x: '1000'
@@ -94,8 +96,8 @@ services:
       gui-x: "250"
       gui-y: "250"
     to:
-      - "4"
       - "5"
+      - "6"
   lxd:
     charm: "cs:lxd"
     options:
@@ -270,9 +272,9 @@ services:
       block-device: sdb
       overwrite: "true"
     to:
-      - "6"
       - "7"
       - "8"
+      - "9"
   heat:
     charm: cs:xenial/heat
     num_units: 1
@@ -395,10 +397,14 @@ machines:
     constraints: arch=amd64 tags=dual-storage
   "6":
     series: xenial
-    constraints: arch=amd64 tags=physical
+    constraints: arch=amd64 tags=dual-storage
   "7":
     series: xenial
     constraints: arch=amd64 tags=physical
   "8":
     series: xenial
     constraints: arch=amd64 tags=physical
+  "9":
+    series: xenial
+    constraints: arch=amd64 tags=physical
+
