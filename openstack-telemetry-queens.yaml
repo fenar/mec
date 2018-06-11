@@ -1,0 +1,372 @@
+# Author: Fatih Eyup NAR
+# Openstack Queens with Telemetry (Gnocchi, AODH and Grafana for display) Bundle.
+# NOTES:
+# (1) After  Deployment Complete perform:
+#     $ juju run-action ceilometer/0 ceilometer-upgrade
+#     $ juju show-action-status <transaction-id>
+#
+series: xenial
+applications:
+  memcached:
+    charm: 'cs:memcached'
+    num_units: 1
+    annotations:
+      gui-x: '1500'
+      gui-y: '500'
+    to:
+      - 'lxd:ceph-osd/0'
+  grafana:
+    charm: 'cs:grafana'
+    num_units: 1
+    annotations:
+      gui-x: '300'
+      gui-y: '300'
+    to:
+      - 'lxd:4'
+  neutron-openvswitch:
+    charm: 'cs:neutron-openvswitch'
+    annotations:
+      gui-x: '250'
+      gui-y: '500'
+  glance:
+    charm: 'cs:glance'
+    num_units: 1
+    options:
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '250'
+      gui-y: '0'
+    to:
+      - 'lxd:ceph-osd/0'
+  mysql:
+    charm: 'cs:percona-cluster'
+    num_units: 1
+    options:
+      innodb-buffer-pool-size: 256M
+      max-connections: 1000
+    annotations:
+      gui-x: '0'
+      gui-y: '250'
+    to:
+      - 'lxd:neutron-gateway/0'
+  ceph-radosgw:
+    charm: 'cs:ceph-radosgw'
+    num_units: 1
+    options:
+      source: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '1000'
+      gui-y: '250'
+    to:
+      - 'lxd:neutron-gateway/0'
+  cinder-ceph:
+    charm: 'cs:cinder-ceph'
+    annotations:
+      gui-x: '750'
+      gui-y: '250'
+  neutron-gateway:
+    charm: 'cs:neutron-gateway'
+    num_units: 1
+    options:
+      bridge-mappings: 'physnet1:br-ex'
+      data-port: 'br-ex:eth1'
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '0'
+      gui-y: '0'
+    to:
+      - '0'
+  ntp:
+    charm: 'cs:ntp'
+    annotations:
+      gui-x: '1000'
+      gui-y: '0'
+  ceilometer-agent:
+    charm: 'cs:ceilometer-agent'
+    annotations:
+      gui-x: '1250'
+      gui-y: '500'
+  barbican-softhsm:
+    charm: 'cs:barbican-softhsm'
+    annotations:
+      gui-x: '600'
+      gui-y: '300'
+  nova-cloud-controller:
+    charm: 'cs:nova-cloud-controller'
+    num_units: 1
+    options:
+      network-manager: Neutron
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '0'
+      gui-y: '500'
+    to:
+      - 'lxd:ceph-osd/0'
+  neutron-api:
+    charm: 'cs:neutron-api'
+    num_units: 1
+    options:
+      flat-network-providers: physnet1
+      neutron-security-groups: true
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '500'
+      gui-y: '500'
+    to:
+      - 'lxd:nova-compute/0'
+  keystone:
+    charm: 'cs:keystone'
+    num_units: 1
+    options:
+      admin-password: admin
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '500'
+      gui-y: '0'
+    to:
+      - 'lxd:ceph-osd/1'
+  openstack-dashboard:
+    charm: 'cs:openstack-dashboard'
+    num_units: 1
+    options:
+      openstack-origin: 'cloud:xenial-queens'
+      webroot: "/"
+      ubuntu-theme: "no"
+    annotations:
+      gui-x: '500'
+      gui-y: '-250'
+    to:
+      - 'lxd:ceph-osd/1'
+  barbican:
+    charm: 'cs:barbican'
+    num_units: 1
+    annotations:
+      gui-x: '900'
+      gui-y: '300'
+    to:
+      - 'lxd:4'
+  aodh:
+    charm: 'cs:aodh'
+    num_units: 1
+    options:
+      openstack-origin: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '1500'
+      gui-y: '0'
+    to:
+      - 'lxd:neutron-gateway/0'
+  ceilometer:
+    charm: 'cs:ceilometer'
+    num_units: 1
+    options:
+      openstack-origin: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '1250'
+      gui-y: '0'
+    to:
+      - 'lxd:ceph-osd/0'
+  gnocchi:
+    charm: 'cs:gnocchi'
+    num_units: 1
+    options:
+      openstack-origin: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '1500'
+      gui-y: '250'
+    to:
+      - 'lxd:nova-compute/0'
+  nova-compute:
+    charm: 'cs:nova-compute'
+    num_units: 3
+    options:
+      config-flags: default_ephemeral_format=ext4
+      enable-live-migration: true
+      enable-resize: true
+      openstack-origin: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '250'
+      gui-y: '250'
+    to:
+      - '1'
+      - '2'
+      - '3'
+  ceph-osd:
+    charm: 'cs:ceph-osd'
+    num_units: 3
+    options:
+      osd-devices: /dev/sdb
+      osd-reformat: 'yes'
+      source: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '1000'
+      gui-y: '500'
+    to:
+      - '1'
+      - '2'
+      - '3'
+  rabbitmq-server:
+    charm: 'cs:rabbitmq-server'
+    num_units: 1
+    annotations:
+      gui-x: '500'
+      gui-y: '250'
+    to:
+      - 'lxd:neutron-gateway/0'
+  ceph-mon:
+    charm: 'cs:ceph-mon'
+    num_units: 3
+    options:
+      expected-osd-count: 3
+      source: 'cloud:xenial-queens'
+    annotations:
+      gui-x: '750'
+      gui-y: '500'
+    to:
+      - 'lxd:nova-compute/0'
+      - 'lxd:ceph-osd/0'
+      - 'lxd:ceph-osd/1'
+  cinder:
+    charm: 'cs:cinder'
+    num_units: 1
+    options:
+      block-device: None
+      glance-api-version: 2
+      openstack-origin: 'cloud:xenial-queens'
+      worker-multiplier: 0.25
+    annotations:
+      gui-x: '750'
+      gui-y: '0'
+    to:
+      - 'lxd:nova-compute/0'
+relations:
+  - - 'nova-compute:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'neutron-gateway:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'keystone:shared-db'
+    - 'mysql:shared-db'
+  - - 'nova-cloud-controller:identity-service'
+    - 'keystone:identity-service'
+  - - 'glance:identity-service'
+    - 'keystone:identity-service'
+  - - 'neutron-api:identity-service'
+    - 'keystone:identity-service'
+  - - 'neutron-openvswitch:neutron-plugin-api'
+    - 'neutron-api:neutron-plugin-api'
+  - - 'neutron-api:shared-db'
+    - 'mysql:shared-db'
+  - - 'neutron-api:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'neutron-gateway:neutron-plugin-api'
+    - 'neutron-api:neutron-plugin-api'
+  - - 'glance:shared-db'
+    - 'mysql:shared-db'
+  - - 'glance:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'nova-cloud-controller:image-service'
+    - 'glance:image-service'
+  - - 'nova-compute:image-service'
+    - 'glance:image-service'
+  - - 'nova-cloud-controller:cloud-compute'
+    - 'nova-compute:cloud-compute'
+  - - 'nova-cloud-controller:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'nova-cloud-controller:quantum-network-service'
+    - 'neutron-gateway:quantum-network-service'
+  - - 'nova-compute:neutron-plugin'
+    - 'neutron-openvswitch:neutron-plugin'
+  - - 'neutron-openvswitch:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'openstack-dashboard:identity-service'
+    - 'keystone:identity-service'
+  - - 'nova-cloud-controller:shared-db'
+    - 'mysql:shared-db'
+  - - 'nova-cloud-controller:neutron-api'
+    - 'neutron-api:neutron-api'
+  - - 'cinder:image-service'
+    - 'glance:image-service'
+  - - 'cinder:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'cinder:identity-service'
+    - 'keystone:identity-service'
+  - - 'cinder:cinder-volume-service'
+    - 'nova-cloud-controller:cinder-volume-service'
+  - - 'cinder-ceph:storage-backend'
+    - 'cinder:storage-backend'
+  - - 'ceph-mon:client'
+    - 'nova-compute:ceph'
+  - - 'nova-compute:ceph-access'
+    - 'cinder-ceph:ceph-access'
+  - - 'cinder:shared-db'
+    - 'mysql:shared-db'
+  - - 'ceph-mon:client'
+    - 'cinder-ceph:ceph'
+  - - 'ceph-mon:client'
+    - 'glance:ceph'
+  - - 'ceph-osd:mon'
+    - 'ceph-mon:osd'
+  - - 'ntp:juju-info'
+    - 'nova-compute:juju-info'
+  - - 'ntp:juju-info'
+    - 'neutron-gateway:juju-info'
+  - - 'ceph-radosgw:mon'
+    - 'ceph-mon:radosgw'
+  - - 'ceph-radosgw:identity-service'
+    - 'keystone:identity-service'
+  - - 'ceilometer:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'ceilometer-agent:ceilometer-service'
+    - 'ceilometer:ceilometer-service'
+  - - 'ceilometer:identity-notifications'
+    - 'keystone:identity-notifications'
+  - - 'ceilometer-agent:nova-ceilometer'
+    - 'nova-compute:nova-ceilometer'
+  - - 'aodh:shared-db'
+    - 'mysql:shared-db'
+  - - 'aodh:identity-service'
+    - 'keystone:identity-service'
+  - - 'aodh:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'gnocchi:storage-ceph'
+    - 'ceph-mon:client'
+  - - 'gnocchi:shared-db'
+    - 'mysql:shared-db'
+  - - 'gnocchi:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'gnocchi:coordinator-memcached'
+    - 'memcached:cache'
+  - - 'gnocchi:metric-service'
+    - 'ceilometer:metric-service'
+  - - 'gnocchi:identity-service'
+    - 'keystone:identity-service'
+  - - 'ceilometer:identity-credentials'
+    - 'keystone:identity-credentials'
+  - - 'barbican:hsm'
+    - 'barbican-softhsm:hsm'
+  - - 'barbican:amqp'
+    - 'rabbitmq-server:amqp'
+  - - 'barbican:shared-db'
+    - 'mysql:shared-db'
+  - - 'barbican:identity-service'
+    - 'keystone:identity-service'
+machines:
+  '0':
+    series: xenial
+    constraints: arch=amd64 tags=neutron-gw
+  '1':
+    series: xenial
+    constraints: arch=amd64 tags=dual-storage
+  '2':
+    series: xenial
+    constraints: arch=amd64 tags=dual-storage
+  '3':
+    series: xenial
+    constraints: arch=amd64 tags=dual-storage
+  '4':
+    series: xenial
+    constraints: arch=amd64 tags=physical
