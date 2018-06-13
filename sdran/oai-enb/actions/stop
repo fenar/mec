@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source $CHARM_DIR/utils/common
+stop_enb
+status-set maintenance "OAI eNB is  not running"

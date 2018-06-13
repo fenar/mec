@@ -1,0 +1,66 @@
+series: xenial
+services: 
+  "oai-mme": 
+    charm: "cs:~navid-nikaein/xenial/oai-mme-16"
+    num_units: 1
+    options:
+      branch: "develop"
+      eth: "eth0"
+    annotations: 
+      "gui-x": "412.0322265625"
+      "gui-y": "807.6817932128906"
+    to: 
+      - "2"      
+  "oai-hss": 
+    charm: "cs:~navid-nikaein/xenial/oai-hss-8"
+    num_units: 1
+    options:
+      branch: "develop"
+      eth: "eth0"
+    annotations: 
+      "gui-x": "5.1247406005859375"
+      "gui-y": "813.7240626904814"
+    to: 
+      - "3"
+  "mysql": 
+    charm: "cs:xenial/mysql-56"
+    num_units: 1
+    annotations: 
+      "gui-x": "-7.511909484863338"
+      "gui-y": "541.4643581006377"
+    to: 
+      - "4"
+  "oai-spgw":
+    charm: "cs:~navid-nikaein/xenial/oai-spgw-13"
+    num_units: 1
+    options:
+      branch: "develop"
+      sgw-eth: "eth0"
+      pgw-eth: "eth0"
+      DEFAULT_DNS_IPV4_ADDRESS: "8.8.8.8"
+      DEFAULT_DNS_SEC_IPV4_ADDRESS: "8.8.8.8"
+    annotations:
+      "gui-x": "391.90765380859375"
+      "gui-y": "1136.3841552734375"
+    to:
+      - "5"
+relations: 
+  - - "oai-hss:db"
+    - "mysql:db"
+  - - "oai-hss:hss"
+    - "oai-mme:hss"
+  - - "oai-mme:spgw"
+    - "oai-spgw:spgw"
+machines: 
+  "2":
+    series: xenial
+    constraints: "tags=physical"
+  "3":
+    series: xenial
+    constraints: "tags=physical"
+  "4":
+    series: xenial
+    constraints: "tags=physical"
+  "5":
+    series: xenial
+    constraints: "tags=physical"

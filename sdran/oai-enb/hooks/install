@@ -1,0 +1,482 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file install hook
+# brief install the oai-enb for different RF target
+# author  navid.nikaein@eurecom.fr
+
+install_packages(){
+    gitAlreadyInstalled=$(dpkg --get-selections git 2>/dev/null | grep -c 'install') || true
+    if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
+	apt-get install -y --force-yes git # Ensure necessary git dependency exist.
+    fi
+    atAlreadyInstalled=$(dpkg --get-selections at 2>/dev/null | grep -c 'install') || true
+    if [ ! $atAlreadyInstalled -eq 1 ]; then 
+	# If at command is NOT installed
+	apt-get install -y --force-yes at
+	# Ensure at command exists to let juju reschedule this hook after rebooting the machine.
+    fi
+    virtwhatAlreadyInstalled=$(dpkg --get-selections virt-what 2>/dev/null | grep -c 'install') || true
+    if [ ! $virtwhatAlreadyInstalled -eq 1 ]; then 
+	apt-get install -y --force-yes virt-what
+    fi
+    cpufreqAlreadyInstalled=$(dpkg --get-selections cpufrequtils 2>/dev/null | grep -c 'install') || true
+    if [ ! $virtwhatAlreadyInstalled -eq 1 ]; then 
+	apt-get install -y --force-yes cpufrequtils
+    fi
+}
+
+save_config_file(){
+    if [ -f $CHARM_DIR/.config_file ]; then
+	if [ -f $(cat $CHARM_DIR/.config_file) ]; then
+	    juju-log "Save the config file somewhere"
+	    cp $(cat $CHARM_DIR/.config_file) /tmp/
+	fi
+    fi
+}
+
+recover_config_file(){
+    if [ -f $CHARM_DIR/.config_file ]; then
+	if [ -f /tmp/$(cat $CHARM_DIR/.config_file) ]; then
+	    juju-log "Retrieve the saved config file"
+	    mv /tmp/$(cat $CHARM_DIR/.config_file) $conf_path/
+	fi
+    fi
+}
+
+clone_repro(){
+    juju-log  "Fetching and installing Openair5G for $hw"
+    #status-set maintenance "Fetching and installing Openair5G for $hw"
+    
+    echo -n | openssl s_client -showcerts -connect gitlab.eurecom.fr:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' >> /etc/ssl/certs/ca-certificates.crt
+    #git config --global http.sslverify false
+
+    #everytime refresh the installation 
+    if [ -d "$openair_path" ]; then  
+	#juju-log "Removing the installation directory"
+	#rm -rf $openair_path
+	juju-log "Updating the installation directory"
+	cd $openair_path 
+        source oaienv
+	git reset --hard HEAD 
+	#git pull
+	git checkout $branch 
+	if [ "$revision" != "head" ]; then 
+	    git checkout $revision 
+	fi 
+	cd -
+    else
+	git clone https://gitlab.eurecom.fr/oai/openairinterface5g.git $openair_path
+	cd $openair_path
+        source oaienv
+	shopt -s nocasematch
+	git checkout $branch
+	if [ "$revision" != "head" ]; then 
+	    git checkout $revision
+	fi 
+	cd -
+    fi
+    sed -i -r "s/(exit 1)/#\1/" $build_path/tools/fix_asn1 
+}
+
+juju_install_kernel(){
+    #status-set maintenance "Check the kernel and update if required"
+    juju-log "Check the kernel and update if required"
+    check_current_kernel
+    
+    if [ "$machine_type"  == "lxc" -o "$machine_type"  == "lxd" -o "$machine_type" == "docker" ]; then
+	if [[ $REQUIRED_KERNEL_IS_INSTALLED == false ]]; then
+	    #status-set blocked "Install the required kernel or deploy the service in a VM" 
+	    juju-log "Try to continue with this kernel version"
+	    juju-log "You may install the required kernel or deploy the service in a VM" 
+	elif [ "$(cat $CHARM_DIR/.kernel)" == "lowlatency" ]; then
+	    
+	    if [[ $LOWLATENCY_KERNEL_IS_INSTALLED == false ]]; then
+		juju-log "Can't install the lowlatency kernel in $machine_type env. Proceed with the current kernel."
+		status-set maintenance "Proceed with the current generic kernel ($machine_type)"
+		echo "generic"      >  $CHARM_DIR/.kernel
+	    else 
+		juju-log "Required lowlatency kernel is installed"
+		echo "lowlatency"      >  $CHARM_DIR/.kernel
+	    fi
+	else
+	    #status-set maintenance "Proceed with the current kernel ($machine_type)"
+	    juju-log "Required kernel is installed"
+	fi 
+    else  
+	if [[ $REQUIRED_KERNEL_IS_INSTALLED == false ]]; then
+	    if [ "$(cat $CHARM_DIR/.reboot)" != "reboot" ]; then  
+		juju-log "installing the required kernel and reboot"
+		#status-set maintenance "installing the required kernel and rebooting"
+		install_required_kernel
+  		echo "reboot" > $CHARM_DIR/.reboot 
+		juju-reboot --now
+	    else 
+		juju-log "Can't install the required kernel. Proceed with the current kernel."
+	    fi 
+	fi
+    fi 
+}
+
+set_cpu_freq(){
+#getconf _NPROCESSORS_CONF
+    num_cpu=`nproc`
+    num_cpu=$((num_cpu-1))
+    for i in `seq 0 $num_cpu`;
+    do 
+	cpufreq-set -g performance -c $i || true 
+    done 
+    #lsmod | grep intel_powerclamp
+    #[ $? -eq 0 ] && (rmmod intel_powerclamp || true)
+    rmmod intel_powerclamp || true
+    
+}
+
+set_build_args(){
+    
+    if [ "$(cat $CHARM_DIR/.kernel)" == "lowlatency" ]; then
+	juju-log "Enable low-latency (SCHED_DEADLINE) kernel if applies"
+	build_args="$build_args --disable-cpu-affinity --enable-deadline "
+	echo "$build_args"  > $CHARM_DIR/.build_args
+	cp $CHARM_DIR/.build_args $openair_path
+    fi
+    
+    if [ "$machine_type"  == "kvm" ] ; then 	
+	juju-log "Enable -mssse3 -msse4.1 CPU flags, make sure that KVM supports these flags "
+	# this does not work with juju
+	#build_args="$build_args --cflags_processor \"-mssse3 -msse4.1\" " 
+	sed -i  's/\$CFLAGS_PROCESSOR_USER/-mssse3 -msse4.1/g' $build_path/build_oai
+    fi
+
+    juju-log "Enable OAI node $node_func for $hw"
+    
+    if [ "$hw" == "usrp_b200" ]; then
+	build_oai_for_hw="USRP"
+	config_oai_for_hw="usrpb210"
+    elif [ "$hw" == "usrp_300" ]; then
+	build_oai_for_hw="USRP"
+	config_oai_for_hw="usrpx300"
+    elif [ "$hw" == "lmsdr" ]; then 
+	build_oai_for_hw="LMSDR"
+	config_oai_for_hw="lmsdr"
+    elif [ "$hw" == "bladrf" ]; then
+	build_oai_for_hw="BLADERF"
+	config_oai_for_hw="bladerfx40"
+    else
+	juju-log "Unknown target hardware ($hw), setting the hardware to usrpb210"
+	build_oai_for_hw="USRP"
+	config_oai_for_hw="usrpb210"
+    fi 
+    
+    if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]; then 
+	relations="RRU:MME"
+	build_args="$build_args --eNB -t ETHERNET -w None -c -C "
+	echo "$build_args"  > $CHARM_DIR/.build_args
+	cp $CHARM_DIR/.build_args $openair_path
+	
+    elif [ "$node_func" == "eNodeB_3GPP_IP" ]; then
+	build_args="$build_args --eNB --noS1 -w $build_oai_for_hw -c -C "
+	echo "$build_args"  > $CHARM_DIR/.build_args
+	cp $CHARM_DIR/.build_args $openair_path
+    else
+	if [ "$node_func" != "eNodeB_3GPP" ]; then 
+	    juju-log "Unknown node fucntion ($node_func), setting the node to eNodeB_3GPPP"
+	    node_func="eNodeB_3GPPP"
+	fi
+	relations="MME"
+	build_args="$build_args --eNB -w $build_oai_for_hw -c -C "
+	echo "$build_args"  > $CHARM_DIR/.build_args
+	cp $CHARM_DIR/.build_args $openair_path
+   	
+    fi
+    
+    if [ "$agent_active" == "yes" ]; then
+	juju-log "Enable RAN agent"
+	open-port 2210/tcp
+	relations="$relations:RTC"
+	build_args="$build_args -a "
+	echo "$build_args"  > $CHARM_DIR/.build_args
+	cp $CHARM_DIR/.build_args $openair_path
+    fi
+    
+    if [ "$rtmon" == "yes" ]; then
+	juju-log "Enable debugging and monitoring"
+	open-port 2021/udp
+	build_args="$build_args --T-tracer "
+	echo "$build_args"  > $CHARM_DIR/.build_args
+	cp $CHARM_DIR/.build_args $openair_path
+    fi
+    
+}
+
+set_config_file(){
+
+    if [ "$config_file" == "default" ]; then 
+	
+	if [ "$node_func" == "eNodeB_3GPP_BBU" ]; then 
+	    #config_file_name="rcc.band${band}.tm1.if5.${bw}PRB.${config_oai_for_hw}.conf"
+	    config_file_name="rcc.band7.tm1.if5.${bw}PRB.${config_oai_for_hw}.conf"
+	    
+	elif  [ "$node_func" == "NGFI_RCC_IF4p5" ]; then 
+	    #config_file_name="rcc.band${band}.tm1.if4p5.${bw}PRB.${config_oai_for_hw}.conf"
+	    config_file_name="rcc.band7.tm1.if4p5.${bw}PRB.${config_oai_for_hw}.conf"
+	    
+	else
+	    #config_file_name="enb.band${band}.tm1.${bw}PRB.${config_oai_for_hw}.conf"
+	    config_file_name="enb.band7.tm1.${bw}PRB.${config_oai_for_hw}.conf"
+	fi 
+	
+	if [ ! -f $conf_path/$config_file_name ]; then 
+	    juju-log "default config file not found, please set the config file manualy"
+	    status-set blocked "default config file not found, please set the config file manualy"
+	    
+	else
+	    juju-log "setting the configuration file to $config_file_name for $node_func and RF $hw"
+	fi 
+	
+    else 
+	# relative path 
+	if [ -f "$conf_path/$config_file" ]; then 
+	    config_file_name=$config_file
+	    juju-log "setting the configuration file to $config_file_name for $node_func and RF $hw"
+	    # to be improved as a function of the band
+	    if [ "$hw" == "lmssdr" ]; then
+		config_file_lmsdr=$config_file_sodera_path/$config_file_sodera_5mhz_lb
+	    fi 
+	    # absolute path 
+	elif [ -f $config_file ] ; then 
+	    echo "please provide the relative path to: $config_file"
+	    status-set blocked "Provide a relative path to the configuration file ($config_file)"
+	else 
+	    juju-log "configuration file ($config_file) not found"
+	    status-set blocked "configuration file ($config_file) not found"
+	fi 
+	
+    fi
+
+} 
+
+build_enb(){
+    # IF
+    juju-log "Building OAI $node_func for SDR $build_oai_for_hw"
+    #status-set maintenance "Building OAI $node_func for SDR $build_oai_for_hw"
+    $build_path/build_oai -I --eNB -x --install-system-files -w $build_oai_for_hw
+    juju-log  "$build_path/build_oai `echo $build_args`"
+    echo "$build_path/build_oai `echo $build_args`"
+    $build_path/build_oai  `echo $build_args`
+
+
+    echo "$config_file_name" > $CHARM_DIR/.config_file
+    echo "$config_file_lmsdr" > $CHARM_DIR/.config_file_lmsdr
+    echo "$oaieNB_exec_name" > $CHARM_DIR/.execute
+    echo "$fh_tr_mode"  > $CHARM_DIR/.fh_tr_mode
+    echo "$fh_if_name"  > $CHARM_DIR/.fh_if_name
+    echo "$fh_local_port"  > $CHARM_DIR/.fh_local_port
+
+    echo "$rru_tx_shift"  > $CHARM_DIR/.rru_tx_shift
+    echo "$rru_tx_sampleadvance" > $CHARM_DIR/.rru_tx_sampleadvance
+    echo "$rru_tx_schedadvance" > $CHARM_DIR/.rru_tx_schedadvance
+
+    cp $CHARM_DIR/.execute $openair_path
+    cp $CHARM_DIR/.config_file $openair_path
+    cp $CHARM_DIR/.config_file_lmsdr $openair_path
+    cp $CHARM_DIR/.fh_tr_mode $openair_path
+    cp $CHARM_DIR/.fh_if_name $openair_path
+    	
+    
+    if  [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ] ; then
+	
+	juju-log "setting the configuration file $config_file_name with Fronthaul"
+
+	echo 2 > $openair_path/.local_remote_rf
+	
+	# TBD: check the node_func in the config file and match with the user-defined node_func
+	
+	# set the RRU paramters, only used when the node is RRU 
+	sed -r -i  "s/(iq_txshift[ ]*=[ ]*)[0-9]+/\1$rru_tx_shift/" $conf_path/$config_file_name
+	sed -r -i  "s/(tx_sample_advance[ ]*=[ ]*)[0-9]+/\1$rru_tx_sampleadvance/" $conf_path/$config_file_name
+	sed -r -i  "s/(tx_scheduling_advance[ ]*=[ ]*)[0-9]+/\1$rru_tx_schedadvance/" $conf_path/$config_file_name
+
+	# set the common parameters in the target configuration file
+	sed -r -i  "s/(rrh_gw_active[ ]*=[ ]*)\"[a-zA-Z]+\"/\1\"yes\"/" $conf_path/$config_file_name
+	sed -r -i  "s/(tr_preference[ ]*=[ ]*)\"[a-zA-Z]+\"/\1\"$fh_tr_mode\"/" $conf_path/$config_file_name
+	sed -r -i  "s/(rf_preference[ ]*=[ ]*)\"[a-zA-Z]+\"/\1\"$hw\"/" $conf_path/$config_file_name
+       
+	sed -r -i "/local_if_name/ s/\".+\"/\"$fh_if_name\"/" $conf_path/$config_file_name
+	
+	if [ "$fh_tr_mode" == "raw" ] || [ "$fh_tr_mode" == "raw_if4p5" ] ; then 
+	    check_ifup $fh_if_name || true
+            status=$?
+            if [ "$status" == "0" ] ; then
+    		read mac_addr </sys/class/net/$fh_if_name/address
+		echo "$mac_addr"  > $CHARM_DIR/.fh_address	
+	        sed -r -i "/local_address/ s/\".+\"/\"$mac_addr\"/" $conf_path/$config_file_name
+	    else
+                juju-log -l WARNING "fh_if_name interface $fh_if_name does not exist"
+                status-set blocked "fh_if_name interface $fh_if_name does not exist"
+            fi
+	    
+	elif [ "$fh_tr_mode" == "udp" ] || [ "$fh_tr_mode" == "udp_if4p5" ] ; then 
+	    
+            if [ -n "$fh_if_name" ]; then
+                check_ifup $fh_if_name
+                status=$?
+                if [ "$status" == "0" ] ; then
+		    
+                    fh_ipv4=`ifconfig $fh_if_name | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                    if  [ -n "$fh_ipv4" ]; then
+			echo "$fh_ipv4"  > $CHARM_DIR/.fh_address	
+			sed -r -i "/local_address/ s/\".+\"/\"$fh_ipv4\"/" $conf_path/$config_file_name 
+		    else
+			juju-log -l WARNING "The fh_if_name $fh_if_name has to be specified before the relation with MME can be added"
+			status-set blocked "Can't get the ipv4 address of $fh_if_name"
+                    fi
+		else
+                    juju-log -l WARNING "fh_if_name interface $fh_if_name does not exist"
+                    status-set blocked "fh_if_name interface $fh_if_name does not exist"
+		fi
+            else 
+		juju-log -l WARNING "fh_if_name undefined"
+                status-set blocked "fh_if_name undefined"
+            fi
+	else 
+	    status-set blocked "invalide Fronthaul transport mode"
+	fi 
+    else
+	juju-log "setting the configuration file $config_file_name for 3GPPP eNB"
+	sed -r -i  "s/(rrh_gw_active[ ]*=[ ]*)\"[a-zA-Z]+\"/\1\"no\"/" $conf_path/$config_file_name
+	echo 1 > $openair_path/.local_remote_rf
+    fi 
+}
+
+set_exec_args(){
+
+    if [ "$agent_active" == "yes" ]; then
+	$tools_path/make_agent_cache || true
+    fi
+
+    if [ "$rtmon" == "yes" ]; then
+	exec_args=" --T_nowait"
+        open-port 2021/udp
+    fi
+    
+    exec_args="$exec_args -O $conf_path/$config_file_name -S --ulsch-max-errors 1000"
+    echo "$exec_args"  > $CHARM_DIR/.exec_args
+    cp $CHARM_DIR/.exec_args $openair_path
+    
+}
+
+set -eux
+export DEBIAN_FRONTEND=noninteractive
+source /$CHARM_DIR/utils/common
+set_env_paths
+
+status-set maintenance "Installing support packages and $oaieNB_exec_name"
+
+open-port 2152/udp
+branch=`config-get branch`
+revision=`config-get revision`
+kernel=`config-get kernel`
+node_func=`config-get node_function`
+hw=`config-get target_hardware`
+config_file=`config-get config_file`
+agent_active=`config-get agent_active`
+
+fh_tr_mode=`config-get fh_transport_mode`
+fh_if_name=`config-get fh_if_name`
+fh_local_port=`config-get fh_local_port`
+
+open-port $fh_local_port/udp
+
+rru_tx_shift=`config-get rru_tx_shift`
+rru_tx_sampleadvance=`config-get rru_tx_sampleadvance`
+rru_tx_schedadvance=`config-get rru_tx_schedadvance`
+
+rtmon=`config-get remote_monitoring`
+
+# used to set the config file for this node
+band=`config-get eutra_band`
+bw=`config-get N_RB_DL`
+
+relations=""	
+
+echo "$branch" > $CHARM_DIR/.branch
+echo "$revision" > $CHARM_DIR/.revision
+echo "$hw" > $CHARM_DIR/.hw
+echo "$kernel"      >  $CHARM_DIR/.kernel
+echo "$node_func" > $CHARM_DIR/.node_func
+echo "$agent_active" >  $CHARM_DIR/.agent_active
+echo "$rtmon"      >  $CHARM_DIR/.rtmon
+
+echo "no"  > $CHARM_DIR/.rtc_running
+echo "no"  > $CHARM_DIR/.rru_running
+echo "no"  > $CHARM_DIR/.mme_running
+
+build_args=""
+exec_args=""
+build_oai_for_hw=""
+config_oai_for_hw=""
+config_file_name=""
+config_file_lmsdr="null"
+
+install_packages
+machine_type=`virt-what`
+
+save_config_file 
+
+clone_repro
+
+juju_install_kernel
+
+set_cpu_freq
+
+recover_config_file
+
+set_build_args
+
+set_config_file
+
+build_enb
+
+set_exec_args
+
+
+juju-log "Add OAI eNB systemd upstart"
+  
+if [[ $ubuntu_dist == *"14"* ]]; then 
+    cp $CHARM_DIR/files/oaieNB /etc/init/oaieNB.conf
+else
+    cp $CHARM_DIR/files/enb.service /etc/systemd/system/
+fi 
+juju-log "build_args $CHARM_DIR/.build_args"
+juju-log "exec_args $CHARM_DIR/.exec_args"
+
+#status-set blocked "Waiting for the $relations relation(s)"

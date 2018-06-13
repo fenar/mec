@@ -1,0 +1,66 @@
+series: trusty
+services: 
+  "oai-enb": 
+    charm: "cs:~navid-nikaein/trusty/oai-enb-16"
+    num_units: 1
+    options: 
+      N_RB_DL: 25
+      downlink_frequency: "751000000L"
+      eutra_band: 13
+      target_hardware: usrp
+      uplink_frequency_offset: "31000000"
+      rx_gain: 110      
+      #branch: "v0.3.2-branch"
+    annotations: 
+      "gui-x": "987.388427734375"
+      "gui-y": "747.73126483891895"
+    to: 
+      - "3"
+  "oai-epc": 
+    charm: "cs:~navid-nikaein/trusty/oai-epc-24"
+    num_units: 1
+    annotations: 
+      "gui-x": "353"
+      "gui-y": "267"
+    #options:
+    #  branch: "v0.3.2-branch"
+    to: 
+      - "2"
+  "oai-hss": 
+    charm: "cs:~navid-nikaein/trusty/oai-hss-12"
+    num_units: 1
+    annotations: 
+      "gui-x": "592.7639770507812"
+      "gui-y": "652.7269923779814"
+    #options:
+    #  branch: "v0.3.2-branch"
+    to: 
+      - "1"
+  "mysql": 
+    charm: "cs:trusty/mysql-36"
+    num_units: 1
+    annotations: 
+      "gui-x": "223.2505493164062"
+      "gui-y": "530.73126483891895"
+    to: 
+      - "0"
+relations: 
+  - - "oai-epc:epc"
+    - "oai-enb:epc"
+  - - "mysql:db"
+    - "oai-hss:db"
+  - - "oai-hss:hss"
+    - "oai-epc:hss"
+machines: 
+  "3": 
+    series: trusty
+    constraints: "tags=radio"
+  "2":
+    series: trusty
+    constraints: "tags=physical"
+  "1":
+    series: trusty
+    constraints: "tags=physical"
+  "0":
+    series: trusty
+    constraints: "tags=physical"

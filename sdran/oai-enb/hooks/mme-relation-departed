@@ -1,0 +1,59 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file mme-relation-departed
+# brief called when the enb-epc relation is removed 
+# author  navid.nikaein@eurecom.fr and A. B. Molini 
+
+set -eux
+source $CHARM_DIR/utils/common
+set_env_paths
+file_config=`cat $CHARM_DIR/.config_file`
+
+status-set maintenance "running mme-relation-departed relation"
+
+juju-log "stopping eNB service and waiting for a MME relation to be restablished"
+stop_enb
+
+#I can remove from Hss the entry of the IMSI in the case we put from here and not from 
+#PHPOMYADMIN
+#I could remove mnc mcc tai and mme_address from the config file
+
+juju-log "Deleting MME relation info from the config file in use"
+echo "no" > $CHARM_DIR/.mme_running
+rm -f $CHARM_DIR/.trigger_restart
+sed -r -i  "s/(mobile_country_code[ ]*=[ ]*)\"[0-9]*\"/\1\"0\"/" $conf_path/$file_config
+sed -r -i  "s/(mobile_network_code[ ]*=[ ]*)\"[0-9]*\"/\1\"0\"/" $conf_path/$file_config
+#sed -r -i "/mme_ip_address/ s-\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\"-\"0.0.0.0\"-" $conf_path/$file_config
+mmeipv4=`relation-get mme_ip`
+remove_mme_ip $mmeipv4
+
+#

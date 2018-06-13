@@ -1,0 +1,102 @@
+series: xenial
+services:
+  "oai-enb":
+    charm: "./oai-enb"
+    num_units: 1
+    options:
+      N_RB_DL: 25
+      downlink_frequency: "2680000000L"
+      eutra_band: 7
+      target_hardware: "usrp_b200"
+      uplink_frequency_offset: "-120000000"
+      node_function: "eNodeB_3GPP"
+      agent_active: "no"
+      remote_monitoring: "no"
+      eth: "br-eth0"
+      agent_if_name: "br-eth0"
+    annotations:
+      "gui-x": "795.5335693359375"
+      "gui-y": "1118.0245387647"
+    to:
+      - "1"
+  "oai-mme":
+    charm: "cs:~navid-nikaein/trusty/oai-mme"
+    num_units: 1
+    options:
+      eth: "br-eth0"
+      #gummei_tai_mcc: "001\n"
+      #gummei_tai_mnc: "01\n"
+    annotations:
+      "gui-x": "412.0322265625"
+      "gui-y": "807.6817932128906"
+    to:
+      - "2"
+  "oai-hss":
+    charm: "cs:~navid-nikaein/trusty/oai-hss"
+    num_units: 1
+    options:
+      eth: "br-eth0"
+    annotations:
+      "gui-x": "5.1247406005859375"
+      "gui-y": "813.7240626904814"
+    to:
+      - "3"
+  "mysql":
+    charm: "cs:trusty/mysql"
+    num_units: 1
+    annotations:
+      "gui-x": "-7.511909484863338"
+      "gui-y": "541.4643581006377"
+    to:
+      - "4"
+  "oai-spgw":
+    charm: "cs:~navid-nikaein/trusty/oai-spgw"
+    num_units: 1
+    options:
+      sgw-eth: "br-eth0"
+      pgw-eth: "br-eth0"
+      DEFAULT_DNS_IPV4_ADDRESS: "8.8.8.8"
+      DEFAULT_DNS_SEC_IPV4_ADDRESS: "8.8.8.8"
+    annotations:
+      "gui-x": "391.90765380859375"
+      "gui-y": "1136.3841552734375"
+    to:
+      - "5"
+  phpmyadmin:
+    charm: "cs:precise/phpmyadmin"
+    num_units: 1
+    annotations:
+      "gui-x": "1190.5335693359375"
+      "gui-y": "1213.0245387647"
+    options:
+      add-user: "admin"
+      password: "password"
+    to:
+      - "lxd:4"
+relations:
+  - - "oai-enb:mme"
+    - "oai-mme:mme"
+  - - "oai-hss:db"
+    - "mysql:db"
+  - - "oai-hss:hss"
+    - "oai-mme:hss"
+  - - "oai-mme:spgw"
+    - "oai-spgw:spgw"
+  - - "phpmyadmin:db-admin"
+    - "mysql:db-admin"
+machines:
+  "1":
+    series: xenial
+    constraints: "tags=radio"
+  "2":
+    series: trusty
+    constraints: "tags=physical"
+  "3":
+    series: trusty
+    constraints: "tags=physical"
+  "4":
+    series: trusty
+    constraints: "tags=physical"
+  "5":
+    series: trusty
+    constraints: "tags=physical"

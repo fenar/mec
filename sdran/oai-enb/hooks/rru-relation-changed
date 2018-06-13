@@ -1,0 +1,97 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file rrh-relation-changed
+# brief called when a relation between an eNB and RRH is changed 
+# author  navid.nikaein@eurecom.fr 
+
+set -ex
+source $CHARM_DIR/utils/common
+set_env_paths
+
+node_func=`config-get node_function`
+
+if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]; then
+
+    juju-log "RRU relation changed for $node_func"
+    
+    # set the variables first
+    
+    fh_tr_mode=`config-get fh_transport_mode`
+    
+    #this var is used for both ip address in case of UDP tr_mode and MAC address in case RAW
+    rru_addr=`relation-get RRU_ADDRESS`
+    rru_port=`relation-get RRU_PORT`
+    rru_running=`relation-get RRU_RUNNING`
+
+    # keep the status of rru_running for epc-relation-changed
+    echo "$rru_running" >  $CHARM_DIR/.rru_running
+    
+    if [ -z "$rru_running" ]; then
+	juju-log "rru_running: Data not available yet, exit silently"
+	exit 0
+    fi
+
+    if [ -z "$rru_addr" ]; then
+	juju-log "rru_ip_addr: Data not available yet, exit silently"
+	exit 0
+    fi
+    
+    if [ -z "$rru_port" ]; then
+	juju-log "rru_port: Data not available yet, exit silently"
+	exit 0
+    fi
+    
+    
+    file_config=`cat $CHARM_DIR/.config_file`
+
+###############################################################################
+    juju-log "Setting up configuration in the "$file_config" file"
+###############################################################################
+
+    # eNB relation could be 1:n, so for each rrh, we need to add blocks similar to mme_ip address 
+    
+    #sed -r -i  "s/(remote_address[ ]*=[ ]*)\"[0-9a-zA-Z]+\"/\1\"\"/"
+    
+    sed -r -i "/remote_address/ s/\".+\"/\"$rru_addr\"/"  $conf_path/$file_config
+    sed -r -i  "s/(local_port[ ]*=[ ]*)[0-9]+/\1$rru_port/"  $conf_path/$file_config 
+    sed -r -i  "s/(remote_port[ ]*=[ ]*)[0-9]+/\1$rru_port/" $conf_path/$file_config 
+    # local address assumed to be set in install or config-change hook
+    #sed -r -i "/local_address/ s/\".+\"/\"$mac_addr\"/" $conf_path/$config_file_rrh
+    
+else
+    juju-log "Nothing to be done for $node_func"
+    
+fi
+
+#wait for the oai-rru to start properly
+sleep 11
+$CHARM_DIR/hooks/start

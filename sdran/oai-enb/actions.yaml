@@ -1,0 +1,4 @@
+restart:
+  description: Restart enb process.
+stop:
+  description: Stop  enb process.

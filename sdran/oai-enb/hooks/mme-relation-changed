@@ -1,0 +1,108 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file mme-relation-changed 
+# brief called when the enb-mme relation is changed 
+# author  navid.nikaein@eurecom.fr and A. B. Molini 
+
+set -ex
+source $CHARM_DIR/utils/common
+set_env_paths
+
+#tracking_area_code=`relation-get TAC`
+mobile_country_code=`relation-get MCC`
+mobile_network_code=`relation-get MNC`
+mmeipv4=`relation-get mme_ip`
+mme_running=`relation-get mme_running`
+trigger_restart=`relation-get trigger_restart`
+
+# keep the status of mme_running for rrh-relation-changed
+echo "$mme_running" >  $CHARM_DIR/.mme_running
+
+
+if [ -z "$mobile_country_code" ]; then
+   juju-log "MCC not available yet, exit silently"
+   exit 0
+fi
+
+if [ -z "$mobile_network_code" ]; then
+   juju-log "MNC not available yet, exit silently"
+   exit 0
+fi
+
+if [ -z "$mmeipv4" ]; then
+   juju-log "MME IP address not available yet, exit silently"
+   exit 0
+fi
+
+if [ -z "$mme_running" ]; then
+   juju-log "MME is not running yet, exit silently"
+   exit 0
+fi
+
+if [ -z "$trigger_restart" ]; then
+   juju-log "Trigger Restart is not available yet, exit silently"
+   exit 0
+fi
+
+file_config=`cat $CHARM_DIR/.config_file`
+
+   #sed -r -i "/mme_ip_address/ s-\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\"-\"$mmeipv4\"-" $conf_path/$file_config
+if [ -z "$(grep "$mmeipv4" $CHARM_DIR/mme_ips)"  ]; then
+    add_mme_ip $mmeipv4
+fi
+
+
+sed -r -i  "s/(mobile_country_code[ ]*=[ ]*)\"[0-9]+\"/\1\"$mobile_country_code\"/" $conf_path/$file_config
+sed -r -i  "s/(mobile_network_code[ ]*=[ ]*)\"[0-9]+\"/\1\"$mobile_network_code\"/" $conf_path/$file_config
+
+
+
+#if [ ! -f $CHARM_DIR/.trigger_restart ]; then
+#    echo "0" > $CHARM_DIR/.trigger_restart
+#fi  
+
+
+#for mme_id in $(relation-ids mme); do
+#    juju-log ""$mme_id""
+#    for unit in $(relation-list -r $mme_id); do
+#       mme_running=`relation-get -r $mme_id mme_running $unit`
+#       if [ "$mme_running" == "yes" ]; then
+#          break;
+           #at least one mme is running among the ones connected to oaisim
+           #so let's run oaisim...beacuse we have changed some configuration
+#       fi
+#    done
+#done
+
+$CHARM_DIR/hooks/start
+
+

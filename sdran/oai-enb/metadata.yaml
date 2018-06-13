@@ -1,0 +1,25 @@
+name: oai-enb
+summary: Evolved NodeB (eNB) based on OpenAirInterface
+maintainers:
+  - Navid Nikaein <navid.nikaein@eurecom.fr> 
+  - Andrea Bordone Molini <bordone@eurecom.fr>
+description: |
+   This charms allows you to design, deploy, provision, and dispose your 4G-5G OpenAirInterface eNB out of the box on any cloud infrastructure. It supports multiple radio frontends, namely EXMIMO II, USRP, LMSDR, and BLADERF.
+tags:
+  - Telecom, Network
+  - 4G, 5G, LTE
+  - Base Station
+  - eNodeB, eNB, NGFI RCC and RAU
+  - OpenAirInterface, OAI
+  - Eurecom
+subordinate: false
+requires:
+  mme:
+    interface: S1-C
+    optional: true
+  rtc:
+    interface: F1
+    optional: true
+  rru:
+    interface: FH-ETH
+    optional: true

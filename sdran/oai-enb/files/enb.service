@@ -1,0 +1,12 @@
+[Unit]
+Description=OAI eNB Service
+Documentation=https://gitlab.eurecom.fr/oai/openairinterface5g/wikis/home
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c '/srv/openair5G/targets/bin/$(cat /srv/openair5G/.execute) $(cat /srv/openair5G/.exec_args)> /srv/enb.out 2> /srv/enb.err'
+
+[Install]
+WantedBy=multi-user.target
+Alias=enbd.service

@@ -1,0 +1,285 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file config-change
+# brief manage the config changes of oai-enb service, and occurs everytime a new configuration value is updated (juju set)
+# author navid.nikaein@eurecom.fr 
+
+set -eux
+
+source $CHARM_DIR/utils/common
+set_env_paths
+
+status-set maintenance "Configuring $oaieNB_exec_name"
+
+node_func=`config-get node_function`
+file_config=`cat $CHARM_DIR/.config_file`
+
+if [ "$(config-get branch)" != "$(cat $CHARM_DIR/.branch)" ]; then
+    juju-log "branch name changed"
+    $CHARM_DIR/hooks/upgrade-charm
+fi
+
+if [ "$(config-get revision)" != "$(cat $CHARM_DIR/.revision)" ]; then
+    $CHARM_DIR/hooks/upgrade-charm
+    juju-log "revision changed"
+fi
+
+if [ "$(config-get kernel)" != "$(cat $CHARM_DIR/.kernel)" ]; then
+    $CHARM_DIR/hooks/upgrade-charm
+    juju-log "kernel changed"
+fi
+
+if [ "$node_func" != "$(cat $CHARM_DIR/.node_func)" ]; then
+    $CHARM_DIR/hooks/upgrade-charm
+    juju-log "node function changed"
+fi
+
+if [ "$(config-get agent_active)" != "$(cat $CHARM_DIR/.agent_active)" ]; then
+    $CHARM_DIR/hooks/upgrade-charm
+    juju-log "agent active changes"
+fi
+
+
+if [ "$(config-get target_hardware)" != "$(cat $CHARM_DIR/.hw)" ]; then
+    juju-log "hw name changed"
+    $CHARM_DIR/hooks/upgrade-charm
+fi
+
+if [ "$(config-get remote_monitoring)" != "$(cat $CHARM_DIR/.rtmon)" ]; then
+    $CHARM_DIR/hooks/upgrade-charm
+    juju-log "rtmon changed"
+fi
+
+
+
+# The installation runs unnecessarily multiple times for default config file
+if [ "$(config-get config_file)" != "default" ] ; then
+  if [ "$file_config" != "$(config-get config_file)" ]; then 
+    # we don't know what is changed 
+      $CHARM_DIR/hooks/upgrade-charm
+      juju-log "config_file changed"
+  fi  
+fi
+
+if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ] ; then
+
+    echo "yes" > $CHARM_DIR/.rru_active
+
+    fh_tr_mode=`config-get fh_transport_mode`
+    if [ "$fh_tr_mode" != "$(cat $CHARM_DIR/.fh_tr_mode)" ]; then 
+        juju-log "fronthaul tr_mode changed"
+    	$CHARM_DIR/hooks/upgrade-charm
+    fi 
+
+    fh_if_name=`config-get fh_if_name`
+    if [ "$fh_if_name" != "$(cat $CHARM_DIR/.fh_if_name)" ]; then
+	sed -r -i "/local_if_name/ s/\".+\"/\"$fh_if_name\"/" $conf_path/$file_config
+	if [ "$fh_tr_mode" == "raw" ] || [ "$fh_tr_mode" == "raw_if4p5" ]; then 
+	     check_ifup $fh_if_name
+             status=$?
+             if [ "$status" == "0" ] ; then
+	        read mac_addr </sys/class/net/$fh_if_name/address
+                echo "$mac_addr"  > $CHARM_DIR/.fh_address
+	        sed -r -i "/local_address/ s/\".+\"/\"$mac_addr\"/" $conf_path/$config_file
+	    else
+		 juju-log -l WARNING "fh_if_name interface $fh_if_name does not exist"
+                 status-set blocked "fh_if_name interface $fh_if_name does not exist"
+            fi
+  
+    	elif [ "$tr_mode" == "udp" ] || [ "$fh_tr_mode" == "udp_if4p5" ]; then 
+	    
+            if [ -n "$fh_if_name" ]; then
+                check_ifup $fh_if_name
+                status=$?
+                if [ "$status" == "0" ] ; then
+
+                   fh_ipv4=`ifconfig $fh_if_name | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                   if  [ -n "$fh_ipv4" ]; then
+                      echo "$fh_ipv4"  > $CHARM_DIR/.fh_address
+                      sed -r -i "/local_address/ s/\".+\"/\"$fh_ipv4\"/" $conf_path/$config_file_name
+
+                   else
+                     juju-log -l WARNING "The fh_if_name $fh_if_name has to be specified before the relation with MME can be added"
+                     status-set blocked "Can't get the ipv4 address of $fh_if_name"
+                   fi
+               else
+                 juju-log -l WARNING "fh_if_name interface $fh_if_name does not exist"
+                 status-set blocked "fh_if_name interface $fh_if_name does not exist"
+               fi
+	   else
+              juju-log -l WARNING "fh_if_name undefined"
+              status-set blocked "fh_if_name undefined"
+           fi
+   
+        else
+            status-set blocked "invalide Fronthaul transport mode"
+        fi
+    fi
+    
+    fh_local_port=`config-get fh_local_port`
+    if [ "$fh_local_port" != "$(cat $CHARM_DIR/.fh_local_port)" ]; then
+	sed -r -i "/local_port/ s/\".+\"/\"$fh_local_port\"/" $conf_path/$file_config
+    fi
+    # only used when node is RRU, but setting them does not hurt   
+    rru_tx_shift=`config-get rru_tx_shift`
+    if [ "$rru_tx_shift" != "$(cat $CHARM_DIR/.rru_tx_shift)" ]; then
+	sed -r -i  "s/(iq_txshift[ ]*=[ ]*)[0-9]+/\1$rru_tx_shift/" $conf_path/$file_config
+    fi
+    
+    rru_tx_sampleadvance=`config-get rru_tx_sampleadvance`
+    if [ "$rru_tx_sampleadvance" != "$(cat $CHARM_DIR/.rru_tx_sampleadvance)" ]; then
+	sed -r -i  "s/(tx_sample_advance[ ]*=[ ]*)[0-9]+/\1$rru_tx_sampleadvance/" $conf_path/$file_config
+    fi
+    
+    rru_tx_schedadvance=`config-get rru_tx_schedadvance`
+    if [ "$rru_tx_schedadvance" != "$(cat $CHARM_DIR/.rru_tx_schedadvance)" ]; then
+	sed -r -i  "s/(tx_scheduling_advance[ ]*=[ ]*)[0-9]+/\1$rru_tx_schedadvance/" $conf_path/$file_config
+    fi
+
+else
+    echo "no" > $CHARM_DIR/.rru_active
+    
+fi 
+
+
+###############################################################################
+###############################################################################
+juju-log "Setting up configuration in the "$file_config" file"
+###############################################################################
+###############################################################################
+
+#Both the name and the id are sent in the s1 link request setup 
+
+enb_name=`config-get enb_name`
+enb_id=`config-get enb_id`
+if [ -n "$enb_name" ] && [ -n "$enb_id" ]; then
+   #ENB NAME
+   sed -r -i  "s/(Active_eNBs[ ]*=[^\"]*)\".*\"/\1\"$enb_name\"/" $conf_path/$file_config
+   sed -r -i  "s/(eNB_name[ ]*=[ ]*)\".*\"/\1\"$enb_name\"/" $conf_path/$file_config
+   #go in a file and see whether inside the network there is already this name
+   #if not, you can change and we need to run again to establish the s1 link
+
+   #ENB ID
+   sed -r -i  "s/(eNB_ID[ ]*=[ ]*)[^ ;]*/\1$enb_id/" $conf_path/$file_config
+   #go in a file and see whether inside the network there is already this name
+else
+   juju-log -l WARNING "The ENB identifiers have to be specified because maybe the default ones inside the conf file have already been assigned to another ENB. So specify it before proceeding"
+fi
+
+
+###############################################################################
+frame_type=`config-get frame_type`
+tdd_config=`config-get tdd_config`
+tdd_config_s=`config-get tdd_config_s`
+eutra_band=`config-get eutra_band`
+downlink_frequency=`config-get downlink_frequency`
+uplink_frequency_offset=`config-get uplink_frequency_offset`
+N_RB_DL=`config-get N_RB_DL`
+nb_antennas_tx=`config-get nb_antennas_tx`
+nb_antennas_rx=`config-get nb_antennas_rx`
+tx_gain=`config-get tx_gain`
+rx_gain=`config-get rx_gain`
+
+[ -z "$frame_type" ] || (sed -r -i  "s/(frame_type[ \t]*=[ \t]*)\"[a-zA-Z]+\"/\1\"$frame_type\"/" $conf_path/$file_config)
+[ -z "$tdd_config" ] || (sed -r -i  "s/(tdd_config[ \t]*=[ \t]*)[0-9]+/\1$tdd_config/" $conf_path/$file_config)
+[ -z "$tdd_config_s" ] || (sed -r -i  "s/(tdd_config_s[ \t]*=[ \t]*)[0-9]+/\1$tdd_config_s/" $conf_path/$file_config)
+[ -z "$eutra_band" ] || (sed -r -i  "s/(eutra_band[ \t]*=[ \t]*)[0-9]+/\1$eutra_band/" $conf_path/$file_config)
+[ -z "$downlink_frequency" ] || (sed -r -i  "s/(downlink_frequency[ \t]*=[ \t]*)[0-9a-zA-Z]+/\1$downlink_frequency/" $conf_path/$file_config)
+
+[ -z "$uplink_frequency_offset" ] || (sed -r -i  "s/(uplink_frequency_offset[ \t]*=[ \t]*)[-0-9]+/\1$uplink_frequency_offset/" $conf_path/$file_config)
+[ -z "$N_RB_DL" ] || (sed -r -i  "s/(N_RB_DL[ \t]*=[ \t]*)[0-9]+/\1$N_RB_DL/" $conf_path/$file_config)
+[ -z "$nb_antennas_tx" ] || (sed -r -i  "s/(nb_antennas_tx[ ]*=[ ]*)[0-9]+/\1$nb_antennas_tx/" $conf_path/$file_config)
+[ -z "$nb_antennas_rx" ] || (sed -r -i  "s/(nb_antennas_rx[ ]*=[ ]*)[0-9]+/\1$nb_antennas_rx/" $conf_path/$file_config)
+[ -z "$tx_gain" ] || (sed -r -i  "s/(tx_gain[ ]*=[ ]*)[0-9]+/\1$tx_gain/" $conf_path/$file_config)
+[ -z "$rx_gain" ] || (sed -r -i  "s/(rx_gain[ ]*=[ ]*)[0-9]+/\1$rx_gain/" $conf_path/$file_config)
+
+
+pdsch_referenceSignalPower_b13=-27
+pusch_p0_Nominal_b13=-96
+pucch_p0_Nominal_b13=-100
+rach_preambleInitialReceivedTargetPower_b13=-104
+
+case $eutra_band in
+    13)
+	sed -r -i  "s/(pdsch_referenceSignalPower[ \t]*=[ \t]*)[0-9]+/\1$pdsch_referenceSignalPower_b13/" $conf_path/$file_config	
+	sed -r -i  "s/(pusch_p0_Nominal[ \t]*=[ \t]*)[0-9]+/\1$pusch_p0_Nominal_b13/" $conf_path/$file_config	
+	sed -r -i  "s/(pucch_p0_Nominal[ \t]*=[ \t]*)[0-9]+/\1$pucch_p0_Nominal_b13/" $conf_path/$file_config	
+	sed -r -i  "s/(rach_preambleInitialReceivedTargetPower[ \t]*=[ \t]*)[0-9]+/\1$rach_preambleInitialReceivedTargetPower_b13/" $conf_path/$file_config	
+	;;
+    *)
+	juju-log "Calibration parameters might not be optimal for band $$eutra_band"
+	;;
+esac
+
+#for the empty config options there will not be problems becasue in the coinfig file there are
+#the default values set by the OAI developers.
+
+#############################################################################
+
+##I should change the s1-u and s1-mme
+iface=`config-get eth`
+
+if [ -n "$iface" ]; then
+   check_ifup $iface
+   status=$?
+   if [ "$status" == "0" ] ; then 
+	
+   	ipv4=`ifconfig $iface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+  	if  [ -n "$ipv4" ]; then
+   #INTERFACES
+       	   sed -r -i "/ENB_INTERFACE_NAME_FOR_S1_MME/ s/\".+\"/\"$iface\"/" $conf_path/$file_config
+       	   sed -r -i "/ENB_INTERFACE_NAME_FOR_S1U/ s/\".+\"/\"$iface\"/" $conf_path/$file_config
+       #ADDRESSES
+           sed -r -i "/ENB_IPV4_ADDRESS_FOR_S1_MME/ s-\".+\"-\"$ipv4/24\"-" $conf_path/$file_config
+           sed -r -i "/ENB_IPV4_ADDRESS_FOR_S1U/ s-\".+\"-\"$ipv4/24\"-" $conf_path/$file_config
+        else 
+           juju-log -l WARNING "The S1 ethernet interface has to be specified before the relation with MME can be added"
+        fi
+   else
+	juju-log -l WARNING "eth interface $iface does not exist" 
+        status-set blocked "eth interface $iface does not exist"        
+   fi
+else
+   juju-log -l WARNING "The S1 ethernet interface has to be specified before the relation with MME can be added"
+fi
+
+
+############################################################################
+TAC=`config-get TAC`
+#TAC in config file
+[ -z "$TAC" ] || (sed -r -i  "s/(tracking_area_code[ ]*=[ ]*)\"[0-9]+\"/\1\"$TAC\"/" $conf_path/$file_config)
+#if it empty we keep the default already present in the conf file set by the OAI developers
+
+############################################################################
+
+
+$CHARM_DIR/hooks/start

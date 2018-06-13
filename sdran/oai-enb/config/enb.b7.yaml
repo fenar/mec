@@ -1,0 +1,6 @@
+oai-enb:
+   node_function: "eNodeB_3GPP"
+   eutra_band: 7
+   downlink_frequency: "2660000000L"
+   uplink_frequency_offset: "-120000000"
+   N_RB_DL: 25

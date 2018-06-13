@@ -1,0 +1,7 @@
+oai-rcc-if5:
+   node_function: "NGFI_RCC_IF5"
+   eutra_band: 13
+   downlink_frequency: "751000000L"
+   uplink_frequency_offset: "31000000"
+   N_RB_DL: 25
+   agent_active: "yes"

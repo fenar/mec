@@ -1,0 +1,83 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file rtc-relation-changed
+# brief called when a relation between an eNB and RTC is changed 
+# author  navid.nikaein@eurecom.fr
+
+set -ex
+source $CHARM_DIR/utils/common
+
+if [ -f $CHARM_DIR/.rtc_port ]; then
+  rtc_port_config=`cat $CHARM_DIR/.rtc_port`
+else
+  rtc_port_config=""
+fi
+
+rtc_running=`relation-get RTC_RUNNING`
+rtc_port=`relation-get RTC_PORT`
+rtc_ip=`relation-get RTC_PUBLIC_IP`
+agnet_if=`config-get agent_if_name`
+
+if [ -z "$rtc_running" ]; then
+   juju-log "rtc is not running yet, exit silently"
+   exit 0
+fi
+if [ -z "$rtc_port" ]; then
+   juju-log "rtc port not available yet, exit silently"
+   exit 0
+fi
+if [ -z "$rtc_ip" ]; then
+   juju-log "rtc ip not available yet, exit silently"
+   exit 0
+fi
+
+echo "$rtc_running" >  $CHARM_DIR/.rtc_running
+
+file_config=`cat $CHARM_DIR/.config_file`
+
+if [ "$rtc_port_config" != "$rtc_port" ] ; then 
+  open-port $rtc_port/udp
+  if [ "$rtc_port_config" != "" ] ; then 
+     close-port $rtc_port_config/udp || true
+  fi 
+fi   
+
+echo "$rtc_port" > $CHARM_DIR/.rtc_port 
+
+add_rtc_ip $agnet_if $rtc_ip $rtc_port
+
+#if [ -z "$(grep "$rtc_ip" $CHARM_DIR/rtc_ip)"  ]; then
+#    add_rtc_ip $agnet_if $rtc_ip $rtc_port
+#fi 
+
+$CHARM_DIR/hooks/start
+

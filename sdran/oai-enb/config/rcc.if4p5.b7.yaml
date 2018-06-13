@@ -1,0 +1,6 @@
+oai-rcc-if4p5:
+   node_function: "NGFI_RCC_IF4p5"
+   eutra_band: 7
+   downlink_frequency: "2660000000L"
+   uplink_frequency_offset: "-120000000"
+   N_RB_DL: 25

@@ -1,0 +1,204 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file start 
+# brief start oai-enb service, this happens after install or config changed hooks
+# author  navid.nikaein@eurecom.fr and  A. B. Molini   
+
+set -eux
+source $CHARM_DIR/utils/common
+status-set maintenance "Running start hook"
+
+MME_UNIT_RUNNING=0
+MME_UNIT_PRESENT=0
+RRU_UNIT_RUNNING=0
+RRU_UNIT_PRESENT=0 
+RTC_UNIT_RUNNING=0
+RTC_UNIT_PRESENT=0 
+
+node_func=`config-get node_function`
+
+if [ "$node_func" != "eNodeB_IP" ] ; then
+    MME_UNIT_PRESENT=1;
+fi
+
+if [ "$(config-get agent_active)" == "yes" ] ; then
+    RTC_UNIT_PRESENT=1;
+fi
+
+if [ "$(cat $CHARM_DIR/.rru_active)" == "yes" ]; then
+    RRU_UNIT_PRESENT=1;
+fi
+
+if [ -f $CHARM_DIR/.rru_running ]; then
+  rru_running=`cat $CHARM_DIR/.rru_running`
+else
+  rru_running="no"
+fi
+
+if [ -f $CHARM_DIR/.rtc_running ]; then
+    rtc_running=`cat $CHARM_DIR/.rtc_running`
+else
+    rtc_running="no"
+fi
+
+if [ -f $CHARM_DIR/.mme_running ] ;then
+    mme_running=`cat $CHARM_DIR/.mme_running`
+else 
+    mme_running="no"
+fi
+
+
+if [ -n "$(relation-ids mme)" ]; then
+   #we start the service only if we have a relation
+   
+   for mme_id in $(relation-ids mme); do
+       juju-log ""$mme_id""
+       #if the TAC is the same as before, the local setting won't change and so the relation-changed hook 
+       #won't be called
+       relation-set -r "$mme_id" TAC=`config-get TAC`
+       for unit in $(relation-list -r $mme_id); do
+          mme_running=`relation-get -r $mme_id mme_running $unit`
+          if [ "$mme_running" == "yes" ]; then
+             MME_UNIT_RUNNING=$((MME_UNIT_RUNNING + 1))
+             #at least one MME is running among the ones connected to oai enb
+             #so let's run oai enb...beacuse we have changed some configuration
+          fi
+       done
+   done
+
+   
+   for rru_id in $(relation-ids rru); do
+       juju-log ""$rru_id""
+       RRU_UNIT_PRESENT=1
+       relation-set -r "$rru_id" TARGET_HARDWARE=`config-get target_hardware`
+       for rru_unit in $(relation-list -r $rru_id); do
+	   rru_running=`relation-get -r $rru_id RRU_RUNNING $rru_unit`
+	   if [ "$rru_running" == "yes" ]; then
+	       RRU_UNIT_RUNNING=$((RRU_UNIT_RUNNING + 1))
+	   fi
+       done
+   done
+
+   
+   for rtc_id in $(relation-ids rtc); do
+       juju-log ""$rtc_id""
+       RTC_UNIT_PRESENT=1
+       for rtc_unit in $(relation-list -r $rtc_id); do
+	   rtc_running=`relation-get -r $rtc_id RTC_RUNNING $rtc_unit`
+	   if [ "$rtc_running" == "yes" ]; then
+	       RTC_UNIT_RUNNING=$((RTC_UNIT_RUNNING + 1))
+	   fi
+       done
+   done
+ 
+   
+   if [ $MME_UNIT_PRESENT -gt 0 ]; then
+       if [ $MME_UNIT_RUNNING -gt 0 ]; then
+       
+	   if [ $RTC_UNIT_PRESENT -gt 0 ]; then 
+	       if [ $RTC_UNIT_RUNNING -gt 0 ]; then
+	       
+		   if [ $RRU_UNIT_PRESENT -gt 0 ]; then 
+		       if [ $RRU_UNIT_RUNNING -gt 0 ]; then
+
+			   start_enb_process
+		       
+		       else # RRU not running
+			   juju-log "Waiting for RRU Relation"
+			   status-set maintenance "Add RRU relation" 
+		       fi
+		   else # RRU not present
+		       start_enb_process
+		   fi
+	       else # RTC not running
+		   juju-log "Waiting for RTC Relation"
+		   status-set maintenance "Add RTC relation"
+	       fi
+	       
+	   elif [ $RRU_UNIT_PRESENT -gt 0 ]; then  # RTC not present but RRU present
+	       if [ $RRU_UNIT_RUNNING -gt 0 ]; then
+		   start_enb_process
+	       else # RRU not running
+		   juju-log "Waiting for RRU Relation"
+		   status-set maintenance "Add RRU relation" 
+	       fi
+	   else #RTC and RRU not present, but mme running
+	       start_enb_process
+	   fi 
+	   
+       else  # mme not running
+	   juju-log "Waiting for MME relation"
+	   status-set maintenance "Add MME relations"
+       fi
+   elif [ "$node_func" == "eNodeB_IP" ]; then
+
+       if [ $RTC_UNIT_PRESENT -gt 0 ]; then 
+	   if [ $RTC_UNIT_RUNNING -gt 0 ]; then
+	       
+	       if [ $RRU_UNIT_PRESENT -gt 0 ]; then 
+		   if [ $RRU_UNIT_RUNNING -gt 0 ]; then
+		       
+		       start_enb_process
+		       
+		   else # RRU not running
+		       juju-log "Waiting for RRU Relation"
+		       status-set maintenance "Add RRU relation" 
+		   fi
+	       else # RRU not present
+		   start_enb_process
+	       fi
+	   else # RTC not running
+	       juju-log "Waiting for RTC Relation"
+	       status-set maintenance "Add RTC relation"
+	   fi
+	   
+       elif [ $RRU_UNIT_PRESENT -gt 0 ]; then  # RTC not present but RRU present
+	   if [ $RRU_UNIT_RUNNING -gt 0 ]; then
+	       start_enb_process
+	   else # RRU not running
+	       juju-log "Waiting for RRU Relation"
+	       status-set maintenance "Add RRU relation" 
+	   fi
+       else #RTC and RRU not present
+	   start_enb_process
+       fi
+   else
+       juju-log "Unknown node func $node_func"
+       status-set blocked "Unknown node func $node_func"
+       
+   fi
+else
+    juju-log "Waiting for MME relation"
+    status-set blocked "Waiting for MME relation"
+fi
+
+

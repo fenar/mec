@@ -1,0 +1,151 @@
+options:
+   branch:
+     default: "master"
+     description: |
+       branch indicates which installation you want to do. 
+     type: string
+   revision: 
+     default: "head"
+     description: get a specific revison from the openairinterface5G git repository. 
+     type: string
+   kernel: 
+     default: "lowlatency"
+     description: set the default kerenl, generic or lowlatency. 
+     type: string
+   node_function: 
+     default: "eNodeB_3GPP"
+     description: | 
+       set the function of this node. Available Options: eNodeB_3GPP (classical eNodeB function), eNodeB_IP (eNodeB Standalone), eNodeB_3GPP_BBU (eNodeB with NGFI IF5), NGFI_RCC_IF4p5 (NGFI radio cloud center).
+     type: string
+   target_hardware:
+     default: "usrp_b200"
+     description: |
+       defines the target RF hardware. Available Options: usrp_b200, usrp_x310, lmsdr, blader. Setting this option will require different configuration file and will trigger different building process. 
+     type: string
+   config_file:
+     default: "default"
+     description: |
+       takes the default configuration file based on the target hardware. It defines the specific enb configuration file, see openairinterface5g/targets/PROJECTS/GENERIC-LTE-EPC/CONF.
+     type: string
+   eth:
+     default: "br-eth0"
+     description: |
+       defines the interface for S1-U and S1-C. Set this option to the interface the machine onto you deploy this charm has. 
+     type: string
+   TAC:
+     default: 1
+     description: |
+       Set this option to the tracking area code you want this eNB to belong. Possible values are...Tracking area code, 0x0000 and 0xfffe are reserved values.
+     type: int
+   enb_name:
+     default: "eNB_Eurecom_LTEBox"
+     description: |
+       Set this option with the name you want for this eNodeB deployment.
+     type: string
+   enb_id:
+     default: "0xe00"
+     description: |
+       Set this option with the id number you want for this eNodeB deployment. 
+     type: string
+   frame_type:
+     default: "FDD"
+     description: |
+       Setting the frame type, FDD or TDD.
+     type: string
+   tdd_config:
+     default: 3
+     description: |
+       Setting the TDD frame configuration. Valid values, 0,1,2,3,4,5,6.
+     type: int
+   tdd_config_s:
+     default: 0
+     description: |
+       Setting the TDD special subframe configuration. Valid values, 0-9.
+     type: int
+   eutra_band:
+     default: 13
+     description: |
+       Setting the LTE  EUTRA frequency band.
+     type: int
+   downlink_frequency:
+     default: "751000000L"
+     description: |
+       Setting the downlink frequency band.
+     type: string
+   uplink_frequency_offset:
+     default: "31000000"
+     description: |
+      Setting the uplink frequency offset.
+     type: string
+   N_RB_DL:
+     default: 25
+     description: |
+       Setting the bandwidth in terms of number of available PRBS, 25 (5MHz), 50 (10MHz), and 100 (20MHz).
+     type: int
+   nb_antennas_tx:
+     default: 1
+     description: |
+       Setting the number of tx antennas.
+     type: int
+   nb_antennas_rx:
+     default: 1
+     description: |
+       Setting the number of rx antennas.
+     type: int
+   tx_gain:
+     default: 90
+     description: |
+       Setting the tx antenna gain.
+     type: int
+   rx_gain:
+     default: 125
+     description: |
+       Setting the rx antenna gain.
+     type: int
+   agent_active:
+     default: "no"
+     description: |
+        activates the eNB agent to interface with the controller.
+     type: string
+   agent_if_name:
+     default: "eth0"
+     description: |
+        defines the network interface name to connect to the controller. 
+     type: string
+   fh_if_name:
+     default: "eth0"
+     description: |
+        defines the network interface name to connect to the RRU. This required a dedicated fronthaul link between eNB and RRU and must not use the same interface as for the EPC.  
+     type: string
+   fh_local_port: 
+     default: 50000  
+     description: |
+        defines the network interface port to connect to the RRU.
+     type: int
+   fh_transport_mode:
+     default: "udp_if4p5"
+     description: |
+        defines the I/Q sample transport mode. Available mode are raw, udp, raw_if4p5, and udp_if4p5.
+     type: string
+   rru_tx_shift: 
+     default: 4  
+     description: |
+        defines the shift in is samples in tx
+     type: int
+   rru_tx_sampleadvance:
+     default: 80
+     description: |
+        defines the tx i/q sample advace
+     type: int
+   rru_tx_schedadvance:
+     default: 9
+     description: |
+        defines the tx i/q scheduling advance
+     type: int
+   remote_monitoring:
+     default: "no"
+     description: |
+       Enable eNB debugging and monitoring framework for collecting and sending events in real-time to a remote monitoring app. This enable T and VCD tools.
+     type: string
+
+

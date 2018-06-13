@@ -1,0 +1,67 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file rru-relation-joined
+# brief called when a relation betwen an eNB and RRU is created 
+# author  navid.nikaein@eurecom.fr
+
+set -eux
+
+node_func=`config-get node_function`
+
+if [ -f $CHARM_DIR/.fh_address ]; then
+fh_address=`cat $CHARM_DIR/.fh_address`
+else
+fh_address="no"
+fi 
+
+if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]; then
+    
+
+    if [ "$(cat $CHARM_DIR/.rru_active)" == "yes" ]; then 
+	juju-log "Setting up eNB relations for RRU charm"
+#	relation-set RRU_ACTIVE="yes"
+	relation-set TARGET_HARDWARE=`config-get target_hardware`
+	relation-set TRANSPORT_MODE=`config-get fh_transport_mode`
+	relation-set FH_ADDRESS=$fh_address
+	
+    else
+	juju-log "Probably node func changed (rru_active is no), upgrade the charm"
+	$CHARM_DIR/hooks/upgrade-charm
+    fi
+    
+else
+    juju-log "Nothing to be done for $node_func"
+    
+fi
+
+    
+
