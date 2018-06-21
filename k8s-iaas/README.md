@@ -102,3 +102,8 @@ there is a small script to run openALPR in K8s to send on the storage:
 juju scp run-alpr.sh kubernetes-worker-storage/0:/data/
 ```
 
+## Reaching Container
+```
+kubectl exec -it tensorflow-gpu-6987f5b57d-pvww5 bash
+```
+
