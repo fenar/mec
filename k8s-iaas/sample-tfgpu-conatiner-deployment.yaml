@@ -1,0 +1,58 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: tensorflow-gpu
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: tensorflow-gpu
+    spec:
+      volumes:
+      - hostPath:
+          path: /usr/lib/nvidia-396/bin
+        name: bin
+      - hostPath:
+          path: /usr/lib/nvidia-396
+        name: lib
+      - hostPath:
+          path: /usr/lib/x86_64-linux-gnu/libcuda.so.1
+        name: libcuda-so-1
+      - hostPath:
+          path: /usr/lib/x86_64-linux-gnu/libcuda.so
+        name: libcuda-so
+      containers:
+      - name: tensorflow
+        image: tensorflow/tensorflow:latest-gpu
+        ports:
+        - containerPort: 8888
+        resources:
+          limits:
+            alpha.kubernetes.io/nvidia-gpu: 1
+        volumeMounts:
+        - mountPath: /usr/local/nvidia/bin
+          name: bin
+        - mountPath: /usr/local/nvidia/lib
+          name: lib
+        - mountPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1
+          name: libcuda-so-1
+        - mountPath: /usr/lib/x86_64-linux-gnu/libcuda.so
+          name: libcuda-so
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tensorflow-gpu-service
+  labels:
+    app: tensorflow-gpu
+spec:
+  selector:
+    app: tensorflow-gpu
+  ports:
+  - port: 8888
+    protocol: TCP
+    nodePort: 30061
+  type: LoadBalancer
+---
